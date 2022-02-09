@@ -1,0 +1,78 @@
+---
+title: "PLSC 468 Pset 1"
+author: "Kelly Farley"
+date: "2/9/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+# set working directory
+setwd("~/Desktop")
+
+# load libraries
+library(textreadr)
+```
+
+## PROBLEM 1: scraping Maine Encyclopedia
+
+### 1a
+
+**Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties**
+
+```{r}
+url <- "https://maineanencyclopedia.com/category/government/party-platforms-political-parties-government/"
+
+txt <- read_html(url)
+```
+
+**Use gsub and regular expressions to clean text**
+
+**How well did you do?**
+
+### 1b
+
+**Use htmlToText on raw platform text to redo cleaning**
+
+**Comparison to 1a?**
+
+### 1c
+
+**Pick cleanest version and use tm package to turn text data into corpus object**
+
+**Use tm_map and package functions to pre-process; transform to lowercase, remove punctuation, remove stop words**
+
+### 1d
+
+**Term-document matrix with all remaining unigrams**
+
+**List of 20 most and 20 least frequent words across entire corpus**
+
+**List of 10 most frequent words for each of the 6 platforms**
+
+**Which words repeat among 3 R platforms? 3 D platforms? Across 1972 D and R platforms?**
+
+### 1e
+
+**Most frequently repeating word from D and R platforms in 1982**
+
+**2 association tables for each word using findAssocs: first D, then R**
+
+**What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
+
+## PROBLEM 2: scraping presidential communications for the 117th House
+
+Goal: scrape abstract text, date, legislative committee(s) (if any)
+
+Write a loop that will call series of urls for each message
+
+Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
