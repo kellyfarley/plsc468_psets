@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 
 # set working directory (change this for each user)
 wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
@@ -138,8 +139,16 @@ if(do.run==T){
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
 ## PROBLEM 2: scraping presidential communications for the 117th House
+```{r}
+#Goal: scrape abstract text, date, legislative committee(s) (if any)
+url ="https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
+#parsing html code
+obs=read_html(GET(url,config(ssl_verifypeer = FALSE)))
+nodes=html_nodes(obs, "p")
+texts = html_text(nodes)
+```
 
-Goal: scrape abstract text, date, legislative committee(s) (if any)
+
 
 Write a loop that will call series of urls for each message
 
