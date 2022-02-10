@@ -66,9 +66,6 @@ txts=gsub("[0-9]", replace=" ", txts)
 # remove particular characters
 txts=gsub("[%&$*]", " ", txts)
 
-# remove html tags
-txts=gsub("<script>[^</script>^<script>]+</script>", "", txts)
-
 # remove white space
 txts=str_trim(txts)
 
@@ -195,12 +192,30 @@ Write a loop that will call series of urls for each message
 Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
 
 ```{r eval=F}
+<<<<<<< HEAD
 # from class
 url ="https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
 #parsing html code
 obs=read_html(GET(url,config(ssl_verifypeer = FALSE)))
 nodes=html_nodes(obs, "p")
 texts = html_text(nodes)
+=======
+#Goal: scrape abstract text, date, legislative committee(s) (if any)
+```{r}
+#loop to collect urls 
+for (i in 3395:3399) 
+{
+  url=paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=3&r=",4000-i, sep='')
+  print(url)
+  
+  obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
+  nodes <- obs %>%
+    html_nodes("p")
+  texts <- html_text(nodes)
+  print(texts)
+}
+```
+>>>>>>> 758abbbac1f638d8fe2ca208596c8196b4190838
 ```
 
 ```{r eval = F}
