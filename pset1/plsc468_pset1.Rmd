@@ -139,7 +139,7 @@ if(do.run==T){
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
 ## PROBLEM 2: scraping presidential communications for the 117th House
-```{r}
+```{r eval=F}
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
 url ="https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
 #parsing html code
@@ -148,7 +148,18 @@ nodes=html_nodes(obs, "p")
 texts = html_text(nodes)
 ```
 
+```{r}
+library(car)
+library(leaps)
+library(lubridate)
+library(rvest)
 
+url <- "https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
+webpage <- read_html(url) 
+# using selector gadget chrome extension
+webpage <- html_nodes(webpage, '.result-heading+ .result-item')
+webpage <- html_text(webpage)
+```
 
 Write a loop that will call series of urls for each message
 
