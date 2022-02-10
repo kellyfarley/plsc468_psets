@@ -1,6 +1,6 @@
 ---
 title: "PLSC 468 Pset 1"
-author: "Kelly Farley"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
 date: "2/9/2022"
 output:
   html_document:
@@ -10,15 +10,15 @@ output:
   pdf_document:
     toc: yes
 ---
-#Hello! 
+
 ```{r setup, include=FALSE}
 rm(list = ls()) # clear global environ
 
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 
-# set working directory (change this for each user)
+# set working directory (change for each user)
 wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
-wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
@@ -27,13 +27,14 @@ library(stringr)
 library(tm)
 library(pryr)
 library(corpus)
+library(SnowballC)
 ```
 
 ## PROBLEM 1: scraping Maine Encyclopedia
 
-### 1a
+### 1a (in progress)
 
-**Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties** (done)
+**Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties**
 
 ```{r}
 # get urls for both republican and democrat platforms for 1968, 1972, 1976
@@ -45,7 +46,7 @@ urls=c(urlsR,urlsD)
 txts=getURL(urls)
 ```
 
-**Use gsub and regular expressions to clean text** (in progress)
+**Use gsub and regular expressions to clean text**
 
 ```{r}
 txts_raw=txts
@@ -60,10 +61,13 @@ txts=tolower(txts)
 txts=gsub("\\W", " ", txts)
 
 # remove numbers
-txts=gsub(txts, pattern="[0-9]", replace=" ")
+txts=gsub("[0-9]", replace=" ", txts)
 
 # remove particular characters
 txts=gsub("[%&$*]", " ", txts)
+
+# remove html tags
+txts=gsub("<script>[^</script>^<script>]+</script>", "", txts)
 
 # remove white space
 txts=str_trim(txts)
@@ -87,21 +91,19 @@ txts=str_trim(txts)
 lapply(txts, function(z){ z[!is.na(z) & z != ""]})
 
 txts_1a <- txts
-
-print("test")
 ```
 
-**How well did you do?** (in progress)
+**How well did you do?**
 
-### 1b
+### 1b (done)
 
-**Use htmlToText on raw platform text to redo cleaning** (done)
+**Use htmlToText on raw platform text to redo cleaning**
 
 ```{r}
 # download htmlToText function
 download.file("https://drive.google.com/u/0/uc?id=1LuMKRhzPBHWGzVM-Bs64n_ciNMoHHbPd", paste(wd, "/functions/htmlToText.R", sep=""))
 
-source(paste(wd, "functions/htmlToText.R", sep=""))
+source(paste(wd, "/functions/htmlToText.R", sep=""))
 
 do.run=T
 if(do.run==T){
@@ -112,25 +114,71 @@ if(do.run==T){
 }
 ```
 
-**Comparison to 1a?  What are the remaining errant strings left here that your effort removed, if any? The reverse? Are the errant strings consistent across each of the platforms? Or is there much variation here?** (done)
+**Comparison to 1a?  What are the remaining errant strings left here that your effort removed, if any? The reverse? Are the errant strings consistent across each of the platforms? Or is there much variation here?**
 
-### 1c
+Compared to using gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean.
+
+Many of the html tags that were present in 1a have been removed: the paragraph tags, the div tags, the class tags, etc. However, punctuation, uppercase letters, and numbers were not removed, and the document was not stemmed, all issues that were addressed manually in 1a.
+
+Errant strings do appear across both platforms: the end of line tags (n), the tab tags (t), etc. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
+
+### 1c (done)
 
 **Pick cleanest version and use tm package to turn text data into corpus object**
 
+```{r}
+corpus=Corpus(VectorSource(txts_1b))
+
+corpus_raw=corpus
+```
+
 **Use tm_map and package functions to pre-process; transform to lowercase, remove punctuation, remove stop words**
 
-### 1d
+```{r}
+# stem using porter algorithm
+corpus = tm_map(corpus, stemDocument)
+
+corpus = tm_map(corpus, PlainTextDocument)
+
+# remove uppercase
+corpus = tm_map(corpus, tolower)
+
+# remove stop words
+corpus = tm_map(corpus, removeWords, stopwords("english"))
+
+# remove punctuation
+corpus = tm_map(corpus, removePunctuation)
+
+# remove extra white space
+corpus = tm_map(corpus, stripWhitespace)
+```
+
+### 1d (to do)
 
 **Term-document matrix with all remaining unigrams**
 
-**List of 20 most and 20 least frequent words across entire corpus**
+```{r}
+dtm = DocumentTermMatrix(corpus)
+```
+
+**List of 20 most and 20 least frequent words across entire corpus** (to do)
+
+```{r}
+```
 
 **List of 10 most frequent words for each of the 6 platforms**
 
+```{r}
+freq10 <- findMostFreqTerms(dtm, 10)
+```
+
 **Which words repeat among 3 R platforms? 3 D platforms? Across 1972 D and R platforms?**
 
-### 1e
+```{r}
+
+```
+
+### 1e (to do)
 
 **Most frequently repeating word from D and R platforms in 1982**
 
@@ -138,9 +186,16 @@ if(do.run==T){
 
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
-## PROBLEM 2: scraping presidential communications for the 117th House
+## PROBLEM 2: scraping presidential communications for the 117th House (in progress)
+
+Goal: scrape abstract text, date, legislative committee(s) (if any)
+
+Write a loop that will call series of urls for each message
+
+Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
+
 ```{r eval=F}
-#Goal: scrape abstract text, date, legislative committee(s) (if any)
+# from class
 url ="https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
 #parsing html code
 obs=read_html(GET(url,config(ssl_verifypeer = FALSE)))
@@ -148,7 +203,8 @@ nodes=html_nodes(obs, "p")
 texts = html_text(nodes)
 ```
 
-```{r}
+```{r eval = F}
+# using different method: select gadget chrome extension
 library(car)
 library(leaps)
 library(lubridate)
@@ -156,11 +212,6 @@ library(rvest)
 
 url <- "https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
 webpage <- read_html(url) 
-# using selector gadget chrome extension
 webpage <- html_nodes(webpage, '.result-heading+ .result-item')
 webpage <- html_text(webpage)
 ```
-
-Write a loop that will call series of urls for each message
-
-Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
