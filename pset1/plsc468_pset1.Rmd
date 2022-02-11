@@ -210,19 +210,17 @@ for (i in 3395:3399)
 
 
 #PRESIDENTIAL MESSAGE 
-for(i in 19:18)
+for(i in 19:1)
 {
-  pres_url=paste("/house-communication/117th-congress/presidential-message/",i,"?s=2&r=", 20-i, sep='')
-  print(url)
-  obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
+  pres_url=paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
+  print(pres_url)
+  obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p")
   texts <- html_text(nodes)
   print(texts)
   
 }
-
-
 
 ```
 
