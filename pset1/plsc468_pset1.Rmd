@@ -217,10 +217,17 @@ for(i in 19:1)
   obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p")
-  texts <- html_text(nodes)
-  print(texts)
+  abstracts <- nodes[3]
+  print(abstracts)
   
 }
+
+
+
+#PETITION
+
+
+#MEMORIAL 
 
 ```
 
