@@ -191,9 +191,8 @@ Write a loop that will call series of urls for each message
 
 Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
 
-```{r eval=F}
+```{r eval = F}
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
-```{r}
 
 #loop to collect EXECUTIVE COMMUNICATION  
 for (i in 3395:3390) 

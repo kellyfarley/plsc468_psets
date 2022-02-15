@@ -277,9 +277,6 @@ txts=gsub(&quot;[0-9]&quot;, replace=&quot; &quot;, txts)
 # remove particular characters
 txts=gsub(&quot;[%&amp;$*]&quot;, &quot; &quot;, txts)
 
-# remove html tags
-txts=gsub(&quot;&lt;script&gt;[^&lt;/script&gt;^&lt;script&gt;]+&lt;/script&gt;&quot;, &quot;&quot;, txts)
-
 # remove white space
 txts=str_trim(txts)
 
@@ -391,12 +388,49 @@ corpus = tm_map(corpus, stripWhitespace)</code></pre>
 <p>Goal: scrape abstract text, date, legislative committee(s) (if any)</p>
 <p>Write a loop that will call series of urls for each message</p>
 <p>Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows</p>
-<pre class="r"><code># from class
-url =&quot;https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D&quot;
-#parsing html code
-obs=read_html(GET(url,config(ssl_verifypeer = FALSE)))
-nodes=html_nodes(obs, &quot;p&quot;)
-texts = html_text(nodes)</code></pre>
+<pre class="r"><code>#Goal: scrape abstract text, date, legislative committee(s) (if any)
+
+#loop to collect EXECUTIVE COMMUNICATION  
+for (i in 3395:3390) 
+{
+  url=paste(&quot;https://www.congress.gov/house-communication/117th-congress/executive-communication/&quot;,i,&quot;?s=3&amp;r=&quot;,4000-i, sep=&#39;&#39;)
+  print(url)
+  obs &lt;- read_html(GET(url, config(ssl_verifypeer = FALSE)))
+  nodes &lt;- obs %&gt;%
+    html_nodes(&quot;p&quot;)
+  text &lt;- html_text(nodes)
+  #collecting abstracts
+  abstracts &lt;- text[4]
+  #dates (this is gross code sorry!)
+  dates &lt;- text[2]
+}
+
+
+
+#PRESIDENTIAL MESSAGE 
+for(i in 19:1)
+{
+  pres_url=paste(&quot;https://www.congress.gov/house-communication/117th-congress/presidential-message/&quot;,i,&quot;?s=3&amp;r=&quot;, 20-i, sep=&#39;&#39;)
+  print(pres_url)
+  obs &lt;- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
+  nodes &lt;- obs %&gt;%
+    html_nodes(&quot;p&quot;)
+  text &lt;- html_text(nodes)
+  #collecting abstracts - need to collect for each url 
+  abstracts &lt;- nodes[3]
+  #dates
+  dates &lt;- texts[2]
+  dates &lt;- gsub(dates, pattern = &quot;[a-z |A-Z ]&quot;, replace = &quot;&quot;)
+}
+
+
+
+
+
+#PETITION
+
+
+#MEMORIAL </code></pre>
 <pre class="r"><code># using different method: select gadget chrome extension
 library(car)
 library(leaps)
