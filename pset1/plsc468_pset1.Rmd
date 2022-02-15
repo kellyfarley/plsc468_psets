@@ -28,6 +28,9 @@ library(tm)
 library(pryr)
 library(corpus)
 library(SnowballC)
+library(textreadr)
+library(httr)
+library(rvest)
 ```
 
 ## PROBLEM 1: scraping Maine Encyclopedia
@@ -84,8 +87,8 @@ txts=str_trim(txts)
 
 # remove least common words (TO DO)
 
-# remove empty entries
-lapply(txts, function(z){ z[!is.na(z) & z != ""]})
+# remove empty entries (invisible keeps output from showing)
+invisible(lapply(txts, function(z){ z[!is.na(z) & z != ""]}))
 
 txts_1a <- txts
 ```
@@ -223,7 +226,7 @@ for(i in 19:1)
   #collecting abstracts - need to collect for each url 
   abstracts <- nodes[3]
   #dates
-  dates <- texts[2]
+  dates <- text[2]
   dates <- gsub(dates, pattern = "[a-z |A-Z ]", replace = "")
 }
 
