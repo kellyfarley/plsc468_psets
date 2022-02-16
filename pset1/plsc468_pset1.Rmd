@@ -217,7 +217,7 @@ for (i in 3395:3390)
   #dates (this is gross code sorry!)
   date <- text[2]
   thisDat <- c(url, date, abstract)
-  exec <<- rbind(exec, thisDat)
+  exec <- rbind(exec, thisDat)
 }
 # need to clean up date and abstract t
 
@@ -239,7 +239,7 @@ for(i in 19:11)
   date <- text[2]
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
-  pres <<- rbind(pres, thisDat)
+  pres <- rbind(pres, thisDat)
 }
 
 #cleaning dates code: 
@@ -282,7 +282,7 @@ for(i in 138:137)
   date <- text[2]
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
-  mem <<- rbind(mem, thisDat)
+  mem <- rbind(mem, thisDat)
 }
 
 
