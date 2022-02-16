@@ -204,6 +204,10 @@ Words repeating across the 1972 Republican and Democratic platforms: "state" and
 
 **Most frequently repeating word from D and R platforms in 1982**
 
+Most frequently repeating word from D 1972: main
+
+Most frequently repeating word from R 1972: support
+
 **2 association tables for each word using findAssocs: first D, then R**
 
 
