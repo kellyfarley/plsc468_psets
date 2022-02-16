@@ -234,7 +234,9 @@ for(i in 19:11)
   text <- html_text(nodes)
    #collecting abstracts
   abstract <- text[3]
+  print(abstract)
   date <- text[2]
+  print(date)
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   pres <- rbind(pres, thisDat)
