@@ -7,3 +7,6 @@ pryr
 corpus
 XML
 SnowballC
+textreadr
+httr
+rvest

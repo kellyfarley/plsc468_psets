@@ -1,7 +1,7 @@
 ---
 title: "PLSC 468 Pset 1"
 author: "Kelly Farley, Numi Katz, and Chelsea Wang"
-date: "2/9/2022"
+date: "2/18/2022"
 output:
   html_document:
     toc: yes
@@ -35,21 +35,26 @@ library(rvest)
 
 ## PROBLEM 1: scraping Maine Encyclopedia
 
-### 1a (add explanation)
+### 1a
 
 **Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties**
 
 ```{r}
 # get urls for both republican and democrat platforms for 1968, 1972, 1976
-years=1968+4*0:2
-urlsR=paste("https://maineanencyclopedia.com/republican-party-platform-",years,"/",sep='')
-urlsD=paste("https://maineanencyclopedia.com/democratic-party-platform-",years,"/",sep='')
+years <- 1968+4*0:2
+urlsR <- paste("https://maineanencyclopedia.com/republican-party-platform-",years,"/",sep='')
+urlsD <- paste("https://maineanencyclopedia.com/democratic-party-platform-",years,"/",sep='')
 
 # combining urls
 urls <- c(urlsD, urlsR)
+
+# print urls
+paste(urls)
 ```
 
 **Use gsub and regular expressions to clean text**
+
+Note that only the text for the first url is printed to save space when reading the knitted HTML, but the text for all six urls is cleaned and stored in the variable cleantxt.
 
 ```{r}
 # looping thru the 6 party platforms
@@ -84,19 +89,25 @@ for (i in 1:length(urls)){
   cleantxt[i] <- txts
 }
 
-cleantxt
+# print first entry to demonstrate cleaning
+cleantxt[1]
 ```
 
 **How well did you do?**
 
-### 1b (revise explanation)
+Using gsub and a series of regular expressions, we were able to remove all HTML attributes, text before and after the preamble + platform, and extraneous white spaces and extra characters. The capitalization and punctuation is preserved. We note that there is an issue with the all-caps words: there is not a space between between the all-caps word and its surrounding lowercase words, an issue we were unable to address. Overall, though, gsub proved to be an effective method for text cleaning.
+
+### 1b
 
 **Use htmlToText on raw platform text to redo cleaning**
+
+Note that only the text for the first url is printed to save space when reading the knitted HTML, but the text for all six urls is cleaned and stored in the variable txts_1b.
 
 ```{r}
 # download htmlToText function
 download.file("https://drive.google.com/u/0/uc?id=1LuMKRhzPBHWGzVM-Bs64n_ciNMoHHbPd", paste(wd, "/functions/htmlToText.R", sep=""))
 
+# source htmlToText function
 source(paste(wd, "/functions/htmlToText.R", sep=""))
 
 do.run=T
@@ -106,55 +117,68 @@ if(do.run==T){
     txts_1b[i]=htmlToText(urls[i])
   }
 }
+
+txts_1b[1]
 ```
 
 **Comparison to 1a?  What are the remaining errant strings left here that your effort removed, if any? The reverse? Are the errant strings consistent across each of the platforms? Or is there much variation here?**
 
-Compared to using gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean.
+Compared to the use of gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean. Much like in 1a, we extract the text with capitalization and punctuation preserved.
 
-Compared to 1a, However, punctuation, uppercase letters, and numbers were not removed, and the document was not stemmed, all issues that were addressed manually in 1a.
+ Much of the work we did manually in 1a was done automatically in 1b, with htmlToText() removing many of the HTML attributes and extraneous white spaces.
 
-Errant strings do not appear across both platforms. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
+However, here are errant strings present in 1b that we removed manually in 1a. There are many leftover HTML tags, such as \n for new lines and \t for tabs. There are leftover special characters, such as â€. There is also extraneous text from the website that is not related to the party platform.
 
-### 1c (done)
+We note that our issue with a lack of spacing around all-caps words in 1a is not present in 1b.
+
+There are no errant strings that appear across both platforms since we addressed almost all of the errant strings manually in 1a. There is variation in precisely what is cleaned based on how thorough one is with gsub.
+
+### 1c
 
 **Pick cleanest version and use tm package to turn text data into corpus object**
 
-We use the version from 1a.
+We use the version from 1a, cleaned manually with gsub and regular expressions.
 
 ```{r}
 # creating a corpus
-corpus=Corpus(VectorSource(cleantxt))
-corpus_raw=corpus
+corpus <- Corpus(VectorSource(cleantxt))
+corpus_raw <- corpus
 ```
 
 **Use tm_map and package functions to pre-process; transform to lowercase, remove punctuation, remove stop words**
 
 ```{r}
 # stem using porter algorithm
-corpus = tm_map(corpus, stemDocument)
+corpus <- tm_map(corpus, stemDocument)
+
 # remove uppercase
-corpus = tm_map(corpus, tolower)
+corpus <- tm_map(corpus, tolower)
+
 # remove stop words
-corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
 # remove punctuation
-corpus = tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removePunctuation)
+
 # remove extra white space
-corpus = tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, stripWhitespace)
+
 # remove numbers
-corpus = tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeNumbers)
 ```
 
-### 1d (add least frequent)
+### 1d
 
 **Term-document matrix with all remaining unigrams**
 
 ```{r}
 # creating a term document matrix
-tdm = TermDocumentMatrix(corpus)
+tdm <- TermDocumentMatrix(corpus)
 ```
 
-**List of 20 most and 20 least frequent words across entire corpus** (add least frequent)
+**List of 20 most and 20 least frequent words across entire corpus**
+
+20 most common worsd across entire corpus:
 
 ```{r}
 # combining the tdms of the 6 platforms into one matrix
@@ -163,7 +187,11 @@ m <- as.matrix(tdm)
 v <- sort(rowSums(m),decreasing=TRUE)
 d <- data.frame(word = names(v),freq=v)
 head(d, 20)
+```
 
+20 least common words across entire corpus:
+
+```{r}
 # reorganizing the maatrix to get the least common words
 v2 <- sort(rowSums(m),decreasing=FALSE)
 d2 <- data.frame(word = names(v2),freq=v2)
@@ -188,10 +216,10 @@ R1968 <- names(freq10[4][[1]])
 R1972 <- names(freq10[5][[1]])
 R1976 <- names(freq10[6][[1]])
 
-# words that repeaat amonfg the 3 R platforms
+# words that repeat among the 3 R platforms
 Reduce(intersect, list(R1968,R1972,R1976))
 
-# words that repeaat among the 3 D platforms
+# words that repeat among the 3 D platforms
 Reduce(intersect, list(D1968,D1972,D1976))
 
 # words that repeat across the 1972 D and R platforms
@@ -204,13 +232,21 @@ Words repeating across the 3 Democratic platforms: "state" and "public."
 
 Words repeating across the 1972 Republican and Democratic platforms: "state" and "public."
 
-### 1e (to do)
+### 1e (REVISE - potential error in most freq word in 1972, revise explanation)
 
-**Most frequently repeating word from D and R platforms in 1982**
+**Most frequently repeating word from D and R platforms in 1972**
 
-Most frequently repeating word from D 1972: main
+```{r}
+# recall that D 1972 is the 2nd text in the corpus
+freq10[2]
 
-Most frequently repeating word from R 1972: support
+# recall that R 1972 is the 5th text in the corpus
+freq10[5]
+```
+
+Most frequently repeating word from Democratic platform in 1972: main
+
+Most frequently repeating word from Republican platform in 1972: support
 
 **2 association tables for each word using findAssocs: first D, then R**
 
@@ -225,22 +261,31 @@ rtdm <- TermDocumentMatrix(corpus[4:6])
 
 
 ```{r}
-#dem word - dem platforms
-findAssocs(dtdm, "main", 0.9)
+demFreq1972 <- "main"
+repFreq1972 <- "support"
 
-#dem word - repub platforms
-findAssocs(rtdm, "main", 0.9)
+## dem platforms
+
+#dem word - dem platforms
+findAssocs(dtdm, demFreq1972, 0.9)
 
 #repub word - dem platforms
-findAssocs(dtdm, "support", 0.9)
+findAssocs(dtdm, repFreq1972, 0.9)
+
+## repub platforms
+
+#dem word - repub platforms
+findAssocs(rtdm, demFreq1972, 0.9)
 
 #repub word - repub platforms
-findAssocs(rtdm, "main", 0.9)
+findAssocs(rtdm, repFreq1972, 0.9)
 ```
 
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
-## PROBLEM 2: scraping presidential communications for the 117th House (in progress)
+ADD EXPLANATION!
+
+## PROBLEM 2: scraping presidential communications for the 117th House
 
 Goal: scrape abstract text, date, legislative committee(s) (if any)
 
@@ -248,7 +293,7 @@ Write a loop that will call series of urls for each message
 
 Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
 
-```{r eval = F}
+```{r}
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
 exec <- data.frame(matrix(ncol=3,nrow=0))
 
