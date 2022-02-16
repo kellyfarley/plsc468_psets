@@ -210,7 +210,6 @@ Turn in: 4 matrix objects (one for each type of communication; Presidential Mess
 
 ```{r eval = F}
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
-
 exec <- data.frame(matrix(ncol=3,nrow=0))
 tibble(exec)
 names(exec) <-  c("url", "date", "abstract")
