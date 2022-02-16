@@ -217,6 +217,8 @@ for (i in 3414:3413)
   abstract <- text[3]
   #dates (this is gross code sorry!)
   date <- text[2]
+  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
+  date <- gsub(date, pattern= "[:|,|.|-]", replacement = "")
   thisDat <- c(url, date, abstract)
   exec <- rbind(exec, thisDat)
 }
@@ -263,6 +265,8 @@ for(i in 96:94)
   #collecting abstracts
   abstract <- text[3]
   date <- text[2]
+  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
+  date <- gsub(date, pattern= "[:|,|.|-]", replacement = "")
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   pet <<- rbind(pet, thisDat)
