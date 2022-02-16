@@ -31,6 +31,8 @@ library(SnowballC)
 library(textreadr)
 library(httr)
 library(rvest)
+
+# chelsea test 6
 ```
 
 ## PROBLEM 1: scraping Maine Encyclopedia
