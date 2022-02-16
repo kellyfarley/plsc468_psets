@@ -84,10 +84,6 @@ for (i in 1:length(urls)){
   cleantxt[i] <- txts
 }
 
-cleantxt[6]
-
-# issue - all caps words don't have spaces before and after, comes like that
-
 cleantxt
 ```
 
@@ -127,6 +123,7 @@ Errant strings do not appear across both platforms. There is variation in precis
 We use the version from 1a.
 
 ```{r}
+# creating a corpus
 corpus=Corpus(VectorSource(cleantxt))
 corpus_raw=corpus
 ```
@@ -136,7 +133,6 @@ corpus_raw=corpus
 ```{r}
 # stem using porter algorithm
 corpus = tm_map(corpus, stemDocument)
-#corpus = tm_map(corpus, PlainTextDocument)
 # remove uppercase
 corpus = tm_map(corpus, tolower)
 # remove stop words
@@ -154,16 +150,24 @@ corpus = tm_map(corpus, removeNumbers)
 **Term-document matrix with all remaining unigrams**
 
 ```{r}
+# creating a term document matrix
 tdm = TermDocumentMatrix(corpus)
 ```
 
 **List of 20 most and 20 least frequent words across entire corpus** (add least frequent)
 
 ```{r}
+# combining the tdms of the 6 platforms into one matrix
 m <- as.matrix(tdm)
+# reorganizing the matrix to get the most common words
 v <- sort(rowSums(m),decreasing=TRUE)
 d <- data.frame(word = names(v),freq=v)
 head(d, 20)
+
+# reorganizing the maatrix to get the least common words
+v2 <- sort(rowSums(m),decreasing=FALSE)
+d2 <- data.frame(word = names(v2),freq=v2)
+head(d2, 20)
 ```
 
 **List of 10 most frequent words for each of the 6 platforms**
