@@ -221,7 +221,6 @@ Turn in: 4 matrix objects (one for each type of communication; Presidential Mess
 exec <- data.frame(matrix(ncol=3,nrow=0))
 
 # will need to add 4th column for committee
-
 for (i in 3414:3413) 
 {
   url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=1&r=",3415-i, sep='')
@@ -232,13 +231,19 @@ for (i in 3414:3413)
   text <- html_text(nodes)
   #collecting abstracts
   abstract <- text[3]
-  #dates (this is gross code sorry!)
-  date <- text[2]
-  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
-  date <- gsub(date, pattern= "[:|,|.|-]", replacement = "")
-  thisDat <- c(url, date, abstract)
+  #committees
+    comm_nodes <- obs %>%
+  html_nodes("li") 
+  x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
+  committee <- comm_nodes[x]
+  committee <- gsub("<[^<>]*>", "", committee)
+  committee <- gsub("\n", "", committee, fixed = TRUE)
+  committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
+  committee <- gsub(" — ", "", committee, fixed = TRUE)
+  #datafram
+  thisDat <- c(url, committee, abstract)
   exec <- rbind(exec, thisDat)
-  names(exec) <-  c("url", "date", "abstract")
+  names(exec) <-  c("url", "committee", "abstract")
 }
 # TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
@@ -254,20 +259,26 @@ for(i in 19:11)
   nodes <- obs %>%
     html_nodes("p") 
   text <- html_text(nodes)
-   #collecting abstracts
+  #collecting abstracts
   abstract <- text[3]
-  date <- text[2]
-  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
-  date <- gsub(date, pattern= "[:]", replacement = "")
-  #NEED COMMITTEE
-  thisDat <- c(url, date, abstract)
+  #COMMITTEE
+  comm_nodes <- obs %>%
+  html_nodes("li") 
+  x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
+  committee <- comm_nodes[x]
+  committee <- gsub("<[^<>]*>", "", committee)
+  #removes exactly in parens
+  committee <- gsub("\n", "", committee, fixed = TRUE)
+  #removing date
+  committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
+  committee <- gsub(" — ", "", committee, fixed = TRUE)
+  #making df 
+  thisDat <- c(url, committee, abstract)
   pres <- rbind(pres, thisDat)
-  names(pres) <-  c("url", "date", "abstract")
+  names(pres) <-  c("url", "committee", "abstract")
 }
-# TO DO: collect committee; change loop to go to 1
 
-#cleaning dates code: 
-#   dates <- gsub(dates, pattern = "[a-z |A-Z | :]", replace = "")
+# TO DO: change loop to go to 1
 
 
 #PETITION
@@ -282,13 +293,19 @@ for(i in 96:94)
   text <- html_text(nodes)
   #collecting abstracts
   abstract <- text[3]
-  date <- text[2]
-  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
-  date <- gsub(date, pattern= "[:|,|.|-]", replacement = "")
-  #NEED COMMITTEE
-  thisDat <- c(url, date, abstract)
+  #committees
+    comm_nodes <- obs %>%
+  html_nodes("li") 
+  x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
+  committee <- comm_nodes[x]
+  committee <- gsub("<[^<>]*>", "", committee)
+  committee <- gsub("\n", "", committee, fixed = TRUE)
+  committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
+  committee <- gsub(" — ", "", committee, fixed = TRUE)
+  #dataframe
+  thisDat <- c(url, committee, abstract)
   pet <<- rbind(pet, thisDat)
-  names(pet) <-  c("url", "date", "abstract")
+  names(pet) <-  c("url", "committee", "abstract")
 }
 # TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
@@ -305,11 +322,18 @@ for(i in 138:137)
   text <- html_text(nodes)
   #collecting abstracts
   abstract <- text[3]
-  date <- text[2]
-  #NEED COMMITTEE
-  thisDat <- c(url, date, abstract)
+  #committees
+  comm_nodes <- obs %>%
+  html_nodes("li") 
+  x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
+  committee <- comm_nodes[x]
+  committee <- gsub("<[^<>]*>", "", committee)
+  committee <- gsub("\n", "", committee, fixed = TRUE)
+  committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
+  committee <- gsub(" — ", "", committee, fixed = TRUE)
+  thisDat <- c(url, committee, abstract)
   mem <- rbind(mem, thisDat)
-  names(mem) <-  c("url", "date", "abstract")
+  names(mem) <-  c("url", "committee", "abstract")
 }
 # TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
