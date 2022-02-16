@@ -221,10 +221,9 @@ Turn in: 4 matrix objects (one for each type of communication; Presidential Mess
 exec <- data.frame(matrix(ncol=3,nrow=0))
 
 # will need to add 4th column for committee
-for (i in 3414:3413) 
+for (i in 3414:1) 
 {
   url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=1&r=",3415-i, sep='')
-  print(url)
   obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p")
@@ -242,20 +241,18 @@ for (i in 3414:3413)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
   #datafram
-  thisDat <- c(url, committee, abstract)
+  thisDat <- c(url, abstract,committee)
   exec <- rbind(exec, thisDat)
-  names(exec) <-  c("url", "committee", "abstract")
+  names(exec) <-  c("URL", "Abstract", "Committee")
 }
-# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 
 #PRESIDENTIAL MESSAGE 
 pres <- data.frame(matrix(ncol=3,nrow=0))
-for(i in 19:11)
+for(i in 19:1)
 {
   pres_url=paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
-  print(pres_url)
   obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p") 
@@ -275,20 +272,18 @@ for(i in 19:11)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
   #making df 
-  thisDat <- c(url, committee, abstract)
+  thisDat <- c(url,abstract, committee)
   pres <- rbind(pres, thisDat)
-  names(pres) <-  c("url", "committee", "abstract")
+  names(pres) <-  c("URL", "Abstract","Committee")
 }
 
-# TO DO: change loop to go to 1
 
 
 #PETITION
 pet <- data.frame(matrix(ncol=3,nrow=0))
-for(i in 96:94)
+for(i in 96:1)
 {
   pet_url=paste("https://www.congress.gov/house-communication/117th-congress/petition/",i,"?s=3&r=", 97-i, sep='')
-  print(pet_url)
   obs <- read_html(GET(pet_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p") 
@@ -306,19 +301,17 @@ for(i in 96:94)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
   #dataframe
-  thisDat <- c(url, committee, abstract)
+  thisDat <- c(url, abstract, committee)
   pet <<- rbind(pet, thisDat)
-  names(pet) <-  c("url", "committee", "abstract")
+  names(pet) <-  c("URL", "Abstract","Committee")
 }
-# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 #MEMORIAL 
 mem <- data.frame(matrix(ncol=3,nrow=0))
-for(i in 138:137)
+for(i in 138:1)
 {
   mem_url=paste("https://www.congress.gov/house-communication/117th-congress/memorial/",i,"?s=3&r=", 139-i, sep='')
-  print(mem_url)
   obs <- read_html(GET(mem_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p") 
@@ -335,11 +328,10 @@ for(i in 138:137)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
-  thisDat <- c(url, committee, abstract)
+  thisDat <- c(url, abstract, committee)
   mem <- rbind(mem, thisDat)
-  names(mem) <-  c("url", "committee", "abstract")
+  names(mem) <-  c("URL", "Abstract", "Committee")
 }
-# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 ```
