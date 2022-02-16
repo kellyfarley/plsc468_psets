@@ -222,30 +222,67 @@ for (i in 3395:3390)
 
 
 #PRESIDENTIAL MESSAGE 
-for(i in 19:1)
+pres <- data.frame(matrix(ncol=3,nrow=0))
+names(pres) <-  c("url", "date", "abstract")
+for(i in 19:11)
 {
   pres_url=paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
   print(pres_url)
   obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
-    html_nodes("p")
+    html_nodes("p") 
   text <- html_text(nodes)
-  #collecting abstracts - need to collect for each url 
-  # need to reformat!
-  abstracts <- nodes[3]
-  #dates
-  dates <- text[2]
-  dates <- gsub(dates, pattern = "[a-z |A-Z | :]", replace = "")
+   #collecting abstracts
+  abstract <- text[3]
+  date <- text[2]
+  #NEED COMMITTEE
+  thisDat <- c(url, date, abstract)
+  pres <<- rbind(pres, thisDat)
 }
 
-
-
+#cleaning dates code: 
+#   dates <- gsub(dates, pattern = "[a-z |A-Z | :]", replace = "")
 
 
 #PETITION
+pet <- data.frame(matrix(ncol=3,nrow=0))
+names(pet) <-  c("url", "date", "abstract")
+for(i in 96:95)
+{
+  pet_url=paste("https://www.congress.gov/house-communication/117th-congress/petition/",i,"?s=3&r=", 97-i, sep='')
+  print(pet_url)
+  obs <- read_html(GET(pet_url, config(ssl_verifypeer = FALSE)))
+  nodes <- obs %>%
+    html_nodes("p") 
+  text <- html_text(nodes)
+  #collecting abstracts
+  abstract <- text[3]
+  date <- text[2]
+  #NEED COMMITTEE
+  thisDat <- c(url, date, abstract)
+  pet <<- rbind(pet, thisDat)
+}
 
 
 #MEMORIAL 
+mem <- data.frame(matrix(ncol=3,nrow=0))
+names(mem) <-  c("url", "date", "abstract")
+for(i in 138:137)
+{
+  mem_url=paste("https://www.congress.gov/house-communication/117th-congress/memorial/",i,"?s=3&r=", 139-i, sep='')
+  print(mem_url)
+  obs <- read_html(GET(mem_url, config(ssl_verifypeer = FALSE)))
+  nodes <- obs %>%
+    html_nodes("p") 
+  text <- html_text(nodes)
+  #collecting abstracts
+  abstract <- text[3]
+  date <- text[2]
+  #NEED COMMITTEE
+  thisDat <- c(url, date, abstract)
+  mem <<- rbind(mem, thisDat)
+}
+
 
 ```
 
