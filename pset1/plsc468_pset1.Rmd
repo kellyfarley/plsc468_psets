@@ -200,20 +200,21 @@ Turn in: 4 matrix objects (one for each type of communication; Presidential Mess
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
 
 exec <- data.frame(matrix(ncol=3,nrow=0))
+tibble(exec)
 names(exec) <-  c("url", "date", "abstract")
+
 # will need to add 4th column for committee
 
-#loop to collect EXECUTIVE COMMUNICATION  
-for (i in 3395:3390) 
+for (i in 3414:3413) 
 {
-  url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=3&r=",4000-i, sep='')
+  url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=1&r=",3415-i, sep='')
   print(url)
   obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
   nodes <- obs %>%
     html_nodes("p")
   text <- html_text(nodes)
   #collecting abstracts
-  abstract <- text[4]
+  abstract <- text[3]
   #dates (this is gross code sorry!)
   date <- text[2]
   thisDat <- c(url, date, abstract)
@@ -249,7 +250,7 @@ for(i in 19:11)
 #PETITION
 pet <- data.frame(matrix(ncol=3,nrow=0))
 names(pet) <-  c("url", "date", "abstract")
-for(i in 96:95)
+for(i in 96:94)
 {
   pet_url=paste("https://www.congress.gov/house-communication/117th-congress/petition/",i,"?s=3&r=", 97-i, sep='')
   print(pet_url)
