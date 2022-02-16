@@ -238,6 +238,8 @@ for(i in 19:11)
    #collecting abstracts
   abstract <- text[3]
   date <- text[2]
+  date <- gsub(date, pattern= "[a-z|A-Z]", replacement = "")
+  date <- gsub(date, pattern= "[:]", replacement = "")
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   pres <- rbind(pres, thisDat)
