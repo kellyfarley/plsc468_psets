@@ -35,7 +35,7 @@ library(rvest)
 
 ## PROBLEM 1: scraping Maine Encyclopedia
 
-### 1a (in progress)
+### 1a (add explanation)
 
 **Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties**
 
@@ -93,7 +93,7 @@ cleantxt
 
 **How well did you do?**
 
-### 1b (done)
+### 1b (revise explanation)
 
 **Use htmlToText on raw platform text to redo cleaning**
 
@@ -116,13 +116,15 @@ if(do.run==T){
 
 Compared to using gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean.
 
-Many of the html tags that were present in 1a have been removed: the paragraph tags, the div tags, the class tags, etc. However, punctuation, uppercase letters, and numbers were not removed, and the document was not stemmed, all issues that were addressed manually in 1a.
+Compared to 1a, However, punctuation, uppercase letters, and numbers were not removed, and the document was not stemmed, all issues that were addressed manually in 1a.
 
-Errant strings do appear across both platforms: the end of line tags (n), the tab tags (t), etc. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
+Errant strings do not appear across both platforms. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
 
-### 1c (done) - CHELSEA EDIT
+### 1c (done)
 
 **Pick cleanest version and use tm package to turn text data into corpus object**
+
+We use the version from 1a.
 
 ```{r}
 corpus=Corpus(VectorSource(cleantxt))
@@ -147,7 +149,7 @@ corpus = tm_map(corpus, stripWhitespace)
 corpus = tm_map(corpus, removeNumbers)
 ```
 
-### 1d (to do)
+### 1d (add least frequent)
 
 **Term-document matrix with all remaining unigrams**
 
@@ -155,7 +157,7 @@ corpus = tm_map(corpus, removeNumbers)
 tdm = TermDocumentMatrix(corpus)
 ```
 
-**List of 20 most and 20 least frequent words across entire corpus** (to do)
+**List of 20 most and 20 least frequent words across entire corpus** (add least frequent)
 
 ```{r}
 m <- as.matrix(tdm)
@@ -182,15 +184,21 @@ R1968 <- names(freq10[4][[1]])
 R1972 <- names(freq10[5][[1]])
 R1976 <- names(freq10[6][[1]])
 
-# words that repeaat among the 3 D platforms
-Reduce(intersect, list(D1968,D1972,D1976))
-
 # words that repeaat amonfg the 3 R platforms
 Reduce(intersect, list(R1968,R1972,R1976))
+
+# words that repeaat among the 3 D platforms
+Reduce(intersect, list(D1968,D1972,D1976))
 
 # words that repeat across the 1972 D and R platforms
 Reduce(intersect, list(D1972, R1972))
 ```
+
+Words repeating across the 3 Republican platforms: "state" and "main."
+
+Words repeating across the 3 Democratic platforms: "state" and "public."
+
+Words repeating across the 1972 Republican and Democratic platforms: "state" and "public."
 
 ### 1e (to do)
 
@@ -212,8 +220,6 @@ Turn in: 4 matrix objects (one for each type of communication; Presidential Mess
 #Goal: scrape abstract text, date, legislative committee(s) (if any)
 
 exec <- data.frame(matrix(ncol=3,nrow=0))
-tibble(exec)
-names(exec) <-  c("url", "date", "abstract")
 
 # will need to add 4th column for committee
 
@@ -233,8 +239,9 @@ for (i in 3414:3413)
   date <- gsub(date, pattern= "[:|,|.|-]", replacement = "")
   thisDat <- c(url, date, abstract)
   exec <- rbind(exec, thisDat)
+  names(exec) <-  c("url", "date", "abstract")
 }
-# need to clean up date and abstract t
+# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 
@@ -257,7 +264,9 @@ for(i in 19:11)
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   pres <- rbind(pres, thisDat)
+  names(pres) <-  c("url", "date", "abstract")
 }
+# TO DO: collect committee; change loop to go to 1
 
 #cleaning dates code: 
 #   dates <- gsub(dates, pattern = "[a-z |A-Z | :]", replace = "")
@@ -282,7 +291,9 @@ for(i in 96:94)
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   pet <<- rbind(pet, thisDat)
+  names(pet) <-  c("url", "date", "abstract")
 }
+# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 #MEMORIAL 
@@ -302,7 +313,9 @@ for(i in 138:137)
   #NEED COMMITTEE
   thisDat <- c(url, date, abstract)
   mem <- rbind(mem, thisDat)
+  names(mem) <-  c("url", "date", "abstract")
 }
+# TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
 ```
