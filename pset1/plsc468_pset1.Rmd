@@ -240,6 +240,7 @@ for (i in 3414:3413)
   committee <- gsub("\n", "", committee, fixed = TRUE)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
+  committee <- paste(committee, collapse=", ")
   #datafram
   thisDat <- c(url, committee, abstract)
   exec <- rbind(exec, thisDat)
@@ -272,6 +273,7 @@ for(i in 19:11)
   #removing date
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
+  committee <- paste(committee, collapse=", ")
   #making df 
   thisDat <- c(url, committee, abstract)
   pres <- rbind(pres, thisDat)
@@ -302,6 +304,7 @@ for(i in 96:94)
   committee <- gsub("\n", "", committee, fixed = TRUE)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
+  committee <- paste(committee, collapse=", ")
   #dataframe
   thisDat <- c(url, committee, abstract)
   pet <<- rbind(pet, thisDat)
@@ -331,6 +334,7 @@ for(i in 138:137)
   committee <- gsub("\n", "", committee, fixed = TRUE)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
+  committee <- paste(committee, collapse=", ")
   thisDat <- c(url, committee, abstract)
   mem <- rbind(mem, thisDat)
   names(mem) <-  c("url", "committee", "abstract")
@@ -338,17 +342,4 @@ for(i in 138:137)
 # TO DO: collect committee; need to clean up date and abstract; change loop to go to 1
 
 
-```
-
-```{r eval = F}
-# using different method: select gadget chrome extension
-library(car)
-library(leaps)
-library(lubridate)
-library(rvest)
-
-url <- "https://www.congress.gov/search?q=%5B%7B%22source%22%3A%22house-communications%22%2C%22congress%22%3A%22117%22%7D%5D"
-webpage <- read_html(url) 
-webpage <- html_nodes(webpage, '.result-heading+ .result-item')
-webpage <- html_text(webpage)
 ```
