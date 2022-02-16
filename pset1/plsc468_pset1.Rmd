@@ -31,8 +31,6 @@ library(SnowballC)
 library(textreadr)
 library(httr)
 library(rvest)
-
-# chelsea test 11
 ```
 
 ## PROBLEM 1: scraping Maine Encyclopedia
@@ -46,53 +44,51 @@ library(rvest)
 years=1968+4*0:2
 urlsR=paste("https://maineanencyclopedia.com/republican-party-platform-",years,"/",sep='')
 urlsD=paste("https://maineanencyclopedia.com/democratic-party-platform-",years,"/",sep='')
-urls=c(urlsR,urlsD)
 
-txts=getURL(urls)
+# combining urls
+urls <- c(urlsD, urlsR)
 ```
 
 **Use gsub and regular expressions to clean text**
 
 ```{r}
-txts_raw=txts
+# looping thru the 6 party platforms
+cleantxt <- NULL
 
-# to restore
-txts=txts_raw
+for (i in 1:length(urls)){
+  txts <- getURL(urls[i])
+  
+  # remove html attributes
+  txts <- gsub("<[^<>]*>", "", txts)
+  txts <- gsub("\t", "", txts, fixed = TRUE)
+  txts <- gsub("\n", "", txts, fixed = TRUE)
+  txts <- gsub("&#82[0-9]{2};", "", txts)
+  
+  # removing large amounts of white space
+  txts <- gsub("\\s{2,}", "", txts)
+  
+  # removing text before preamble begins
+  txts <- gsub(".*description", "", txts) # "description" tag always comes right before content
+  txts <- gsub(".*\\(\\);\\}\\);", "", txts) # another tag before content
+  txts <- gsub(".*(?i)[aA-zZ]preamble", "", txts)
+  txts <-gsub(".*;+(?i)preamble", "", txts)
+  
+  # removing text after party platform ends
+  txts <- gsub("Source: .*", "", txts)
+  
+  # removing extra characters
+  txts <- gsub("â€\\S?", "", txts)
+  txts <- gsub("*", "", txts, fixed = TRUE)
+  
+  # adding final cleaned text
+  cleantxt[i] <- txts
+}
 
-# remove capitalization
-txts=tolower(txts)
+cleantxt[6]
 
-# remove punctuation and non-alpha-numerics
-txts=gsub("\\W", " ", txts)
+# issue - all caps words don't have spaces before and after, comes like that
 
-# remove numbers
-txts=gsub("[0-9]", replace=" ", txts)
-
-# remove particular characters
-txts=gsub("[%&$*]", " ", txts)
-
-# remove white space
-txts=str_trim(txts)
-
-# stemming (FIX)
-#txts=stem_snowball(txts, algorithm="en")
-
-# split at spaces
-#txts=str_split(txts, " ")
-#corpus=unlist(txts)
-
-# remove stop words
-#stopwords <- c("the", "or", "a", "at", "if", "be", "an")
-#txts=txts[!txts %in% stopwords]
-
-# remove most common words (TO DO)
-
-# remove least common words (TO DO)
-
-# remove empty entries (invisible keeps output from showing)
-invisible(lapply(txts, function(z){ z[!is.na(z) & z != ""]}))
-
-txts_1a <- txts
+cleantxt
 ```
 
 **How well did you do?**
@@ -124,13 +120,12 @@ Many of the html tags that were present in 1a have been removed: the paragraph t
 
 Errant strings do appear across both platforms: the end of line tags (n), the tab tags (t), etc. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
 
-### 1c (done)
+### 1c (done) - CHELSEA EDIT
 
 **Pick cleanest version and use tm package to turn text data into corpus object**
 
 ```{r}
-corpus=Corpus(VectorSource(txts_1b))
-
+corpus=Corpus(VectorSource(cleantxt))
 corpus_raw=corpus
 ```
 
@@ -139,20 +134,17 @@ corpus_raw=corpus
 ```{r}
 # stem using porter algorithm
 corpus = tm_map(corpus, stemDocument)
-
-corpus = tm_map(corpus, PlainTextDocument)
-
+#corpus = tm_map(corpus, PlainTextDocument)
 # remove uppercase
 corpus = tm_map(corpus, tolower)
-
 # remove stop words
 corpus = tm_map(corpus, removeWords, stopwords("english"))
-
 # remove punctuation
 corpus = tm_map(corpus, removePunctuation)
-
 # remove extra white space
 corpus = tm_map(corpus, stripWhitespace)
+# remove numbers
+corpus = tm_map(corpus, removeNumbers)
 ```
 
 ### 1d (to do)
@@ -160,24 +152,44 @@ corpus = tm_map(corpus, stripWhitespace)
 **Term-document matrix with all remaining unigrams**
 
 ```{r}
-dtm = DocumentTermMatrix(corpus)
+tdm = TermDocumentMatrix(corpus)
 ```
 
 **List of 20 most and 20 least frequent words across entire corpus** (to do)
 
 ```{r}
+m <- as.matrix(tdm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 20)
 ```
 
 **List of 10 most frequent words for each of the 6 platforms**
 
 ```{r}
-freq10 <- findMostFreqTerms(dtm, 10)
+freq10 <- findMostFreqTerms(tdm, 10)
+freq10
 ```
 
 **Which words repeat among 3 R platforms? 3 D platforms? Across 1972 D and R platforms?**
 
 ```{r}
+# extracting the 10 most frequent words of each party platform
+D1968 <- names(freq10[1][[1]])
+D1972 <- names(freq10[2][[1]])
+D1976 <- names(freq10[3][[1]])
+R1968 <- names(freq10[4][[1]])
+R1972 <- names(freq10[5][[1]])
+R1976 <- names(freq10[6][[1]])
 
+# words that repeaat among the 3 D platforms
+Reduce(intersect, list(D1968,D1972,D1976))
+
+# words that repeaat amonfg the 3 R platforms
+Reduce(intersect, list(R1968,R1972,R1976))
+
+# words that repeat across the 1972 D and R platforms
+Reduce(intersect, list(D1972, R1972))
 ```
 
 ### 1e (to do)
