@@ -232,7 +232,7 @@ Words repeating across the 3 Democratic platforms: "state" and "public."
 
 Words repeating across the 1972 Republican and Democratic platforms: "state" and "public."
 
-### 1e (REVISE - potential error in most freq word in 1972, revise explanation)
+### 1e (CHECK)
 
 **Most frequently repeating word from D and R platforms in 1972**
 
@@ -244,12 +244,11 @@ freq10[2]
 freq10[5]
 ```
 
-Most frequently repeating word from Democratic platform in 1972: main
-
-Most frequently repeating word from Republican platform in 1972: support
+The same word repeats most frequently in both the Democratic and Republican platforms in 1972: "state."
 
 **2 association tables for each word using findAssocs: first D, then R**
 
+Since the same word repeats most frequently, we give a total of 2 association tables for the word "state," the first for the Democratic platforms and the second for the Republican platforms. We use a correlation of 0.99.
 
 ```{r}
 # dem tdm
@@ -257,33 +256,32 @@ dtdm <- TermDocumentMatrix(corpus[1:3])
 
 # republican tdm
 rtdm <- TermDocumentMatrix(corpus[4:6])
-```
 
+freq1972 <- "state"
 
-```{r}
-demFreq1972 <- "main"
-repFreq1972 <- "support"
+findAssocs(dtdm, freq1972, 0.99)
 
-## dem platforms
-
-#dem word - dem platforms
-findAssocs(dtdm, demFreq1972, 0.9)
-
-#repub word - dem platforms
-findAssocs(dtdm, repFreq1972, 0.9)
-
-## repub platforms
-
-#dem word - repub platforms
-findAssocs(rtdm, demFreq1972, 0.9)
-
-#repub word - repub platforms
-findAssocs(rtdm, repFreq1972, 0.9)
+findAssocs(rtdm, freq1972, 0.99)
 ```
 
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
-ADD EXPLANATION!
+We look at the top words associated with the word "state" in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1.
+
+```{r}
+findAssocs(dtdm, freq1972, 0.994)
+#topDem <- as.data.frame(unlist(topDem))
+#names(topDem) <- "association"
+#topDem <- topDem[order(association),]
+
+findAssocs(rtdm, freq1972, 0.9984)
+```
+
+For the Democratic platforms, the word "state" is most highly associated with words related to employment (employment, farmer, financi, pay) and new initiatives (creation, provid, propos, report, research).
+
+For the Republican platforms, the word "state" is most highly associated with words relating to law and order (abid, adhere, affirm, enforc, safety, servic), words related to family (child, children, communiti), and words related to patriotic values (courag, liberti, rights, strength).
+
+From these highly associated words, we can understand in which context the word "state" is being used and how the party platforms may differ. Interestingly, it appears that the Democratic platform are focused on introducing new ideas, while the Republican platforms are more focused on maintaining the status quo, which does match with assumptions of the Democratic party being more progressive and the Republican party being more traditional.
 
 ## PROBLEM 2: scraping presidential communications for the 117th House
 
@@ -304,7 +302,7 @@ matNames <- c("URL", "Abstract", "Committee") # to be used for all matrices
 # EXECUTIVE
 exec <- data.frame(matrix(ncol=3,nrow=0))
 
-for (i in 3414:3409) 
+for (i in 3414:1) 
 {
   url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=1&r=",3415-i, sep='')
   obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
@@ -335,7 +333,7 @@ head(exec)
 #PRESIDENTIAL MESSAGE 
 pres <- data.frame(matrix(ncol=3,nrow=0))
 
-for(i in 19:17)
+for(i in 19:1)
 {
   pres_url <- paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
   obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
@@ -367,7 +365,7 @@ head(pres)
 #PETITION
 pet <- data.frame(matrix(ncol=3,nrow=0))
 
-for(i in 96:93)
+for(i in 96:1)
 {
   pet_url=paste("https://www.congress.gov/house-communication/117th-congress/petition/",i,"?s=3&r=", 97-i, sep='')
   obs <- read_html(GET(pet_url, config(ssl_verifypeer = FALSE)))
@@ -398,7 +396,7 @@ head(pet)
 #MEMORIAL 
 mem <- data.frame(matrix(ncol=3,nrow=0))
 
-for(i in 138:135)
+for(i in 138:1)
 {
   mem_url=paste("https://www.congress.gov/house-communication/117th-congress/memorial/",i,"?s=3&r=", 139-i, sep='')
   obs <- read_html(GET(mem_url, config(ssl_verifypeer = FALSE)))
