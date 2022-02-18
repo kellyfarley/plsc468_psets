@@ -266,12 +266,32 @@ findAssocs(rtdm, freq1972, 0.99)
 
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
-We look at the top words associated with the word "state" in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1.
+We look at the top words associated with the word "state" in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1. Because findAssocs() returns rounded associations (in this case, all rounded to 1), we are unable to find a cutoff correlation minimum that allows us to isolate only the highest assocations and we are also unable to sort the list.
+
+Therefore, we will break ties in correlation by considering which words appear the most frequently.
 
 ```{r}
-findAssocs(dtdm, freq1972, 0.994)
+# democratic platform
+dHighestAssoc <- findAssocs(dtdm, freq1972, 0.999)
+dHighestAssoc <- unlist(dHighestAssoc)
+dHighestAssoc <- names(dHighestAssoc)
+dHighestAssoc <- gsub("^.*\\.","", dHighestAssoc) # gives list of words with association of approximately 1
+dHighestAssoc <- as.data.frame(dHighestAssoc)
+names(dHighestAssoc) <- "word"
+dHighestAssocFreq <- merge(dHighestAssoc, d, by="word") # merge with frequency df
+dHighestAssocFreq <- dHighestAssocFreq[order(-dHighestAssocFreq$freq),] # order by frequency
+dHighestAssocFreq[c(1:2),] # get top two words
 
-findAssocs(rtdm, freq1972, 0.9984)
+# republican platform
+rHighestAssoc <- findAssocs(rtdm, freq1972, 0.9984)
+rHighestAssoc <- unlist(rHighestAssoc)
+rHighestAssoc <- names(rHighestAssoc)
+rHighestAssoc <- gsub("^.*\\.","", rHighestAssoc) # gives list of words with association of approximately 1
+rHighestAssoc <- as.data.frame(rHighestAssoc)
+names(rHighestAssoc) <- "word"
+rHighestAssocFreq <- merge(rHighestAssoc, d, by="word") # merge with frequency df
+rHighestAssocFreq <- rHighestAssocFreq[order(-rHighestAssocFreq$freq),] # order by frequency
+rHighestAssocFreq[c(1:2),]
 ```
 
 For the Democratic platforms, the word "state" is most highly associated with words related to employment (employment, farmer, financi, pay) and new initiatives (creation, provid, propos, report, research).
