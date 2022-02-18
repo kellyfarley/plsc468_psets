@@ -294,11 +294,11 @@ rHighestAssocFreq <- rHighestAssocFreq[order(-rHighestAssocFreq$freq),] # order 
 rHighestAssocFreq[c(1:2),]
 ```
 
-For the Democratic platforms, the word "state" is most highly associated with words related to employment (employment, farmer, financi, pay) and new initiatives (creation, provid, propos, report, research).
+For the Democratic platforms, the word "state" is most highly associated with "feder" (appearing 54 times) and "provid" (appearing 47 times), after we break ties in correlation by considering the words that appear most frequently.
 
-For the Republican platforms, the word "state" is most highly associated with words relating to law and order (abid, adhere, affirm, enforc, safety, servic), words related to family (child, children, communiti), and words related to patriotic values (courag, liberti, rights, strength).
+For the Republican platforms, the word "state" is most highly associated with "program" (appearing 84 times) and "local" (appearing 58 times), after we break ties in correlation by considering the words that appear most frequently.
 
-From these highly associated words, we can understand in which context the word "state" is being used and how the party platforms may differ. Interestingly, it appears that the Democratic platform are focused on introducing new ideas, while the Republican platforms are more focused on maintaining the status quo, which does match with assumptions of the Democratic party being more progressive and the Republican party being more traditional.
+From these highly associated words, we can understand in which context the word "state" is being used and how the party platforms may differ. Interestingly, there is a direct juxtaposition in the scope focuses of the two: the Democratic platforms are focused on the federal government, while the Republican platforms are focused on the local government. Both platforms seem to be focused on new initiatives, with "provid" in the Democratic platforms and "program" in the Republican platform, though we note it is difficult to make inferences about exactly in which contexts these words are used.
 
 ## PROBLEM 2: scraping presidential communications for the 117th House
 

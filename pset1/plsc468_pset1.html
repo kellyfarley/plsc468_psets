@@ -572,68 +572,37 @@ findAssocs(dtdm, freq1972, 0.99)</code></pre>
 ##         belief        develop         econom            law 
 ##           0.99           0.99           0.99           0.99</code></pre>
 <p><strong>What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?</strong></p>
-<p>We look at the top words associated with the word “state” in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1.</p>
-<pre class="r"><code>findAssocs(dtdm, freq1972, 0.994)</code></pre>
-<pre><code>## $state
-##      activ   american       area     attent   benefits       best   challeng 
-##       1.00       1.00       1.00       1.00       1.00       1.00       1.00 
-##      civil   committe     condit  construct    coordin   creation     decent 
-##       1.00       1.00       1.00       1.00       1.00       1.00       1.00 
-## employment    express     extend facilities     farmer      feder    financi 
-##       1.00       1.00       1.00       1.00       1.00       1.00       1.00 
-##     improv     justic       mean     nation       open particular        pay 
-##       1.00       1.00       1.00       1.00       1.00       1.00       1.00 
-##    project     propos    protect     provid    reflect     report   research 
-##       1.00       1.00       1.00       1.00       1.00       1.00       1.00 
-##     servic      share    society      staff       well      power 
-##       1.00       1.00       1.00       1.00       1.00       0.99</code></pre>
-<pre class="r"><code>#topDem &lt;- as.data.frame(unlist(topDem))
-#names(topDem) &lt;- &quot;association&quot;
-#topDem &lt;- topDem[order(association),]
-
-findAssocs(rtdm, freq1972, 0.9984)</code></pre>
-<pre><code>## $state
-##           abid           abil          adher         affirm         appeas 
-##              1              1              1              1              1 
-##        applaud          appli       approxim         assist        attitud 
-##              1              1              1              1              1 
-##         behalf        brought          capac           care          child 
-##              1              1              1              1              1 
-##       children        classif      communiti        complex        condemn 
-##              1              1              1              1              1 
-##       consider      construct      contribut         courag          creed 
-##              1              1              1              1              1 
-##         depend         design           done        employe         enforc 
-##              1              1              1              1              1 
-##          equit        essenti         except         expans         extens 
-##              1              1              1              1              1 
-##          feder        foreign          given         higher        highway 
-##              1              1              1              1              1 
-##           hold          human     initiative          insur         intens 
-##              1              1              1              1              1 
-##       interfer        justifi        liberti          local          maine 
-##              1              1              1              1              1 
-##          medic           meet         method         nation          natur 
-##              1              1              1              1              1 
-##           need         negoti         origin        parttim          party 
-##              1              1              1              1              1 
-##          payer            per       platform        practic     principles 
-##              1              1              1              1              1 
-##        problem       procedur         produc        program        purchas 
-##              1              1              1              1              1 
-##         reason         recogn          relat   relationship     resourcesw 
-##              1              1              1              1              1 
-##         restor         revenu       revenues         rights         safety 
-##              1              1              1              1              1 
-##           self         servic          shall          sound       strength 
-##              1              1              1              1              1 
-##      substanti transportation        tremend        univers           util 
-##              1              1              1              1              1 
-##            war           well           work 
-##              1              1              1</code></pre>
-<p>For the Democratic platforms, the word “state” is most highly associated with words related to employment (employment, farmer, financi, pay) and new initiatives (creation, provid, propos, report, research).</p>
-<p>For the Republican platforms, the word “state” is most highly associated with words relating to law and order (abid, adhere, affirm, enforc, safety, servic), words related to family (child, children, communiti), and words related to patriotic values (courag, liberti, rights, strength).</p>
-<p>From these highly associated words, we can understand in which context the word “state” is being used and how the party platforms may differ. Interestingly, it appears that the Democratic platform are focused on introducing new ideas, while the Republican platforms are more focused on maintaining the status quo, which does match with assumptions of the Democratic party being more progressive and the Republican party being more traditional.</p>
+<p>We look at the top words associated with the word “state” in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1. Because findAssocs() returns rounded associations (in this case, all rounded to 1), we are unable to find a cutoff correlation minimum that allows us to isolate only the highest assocations and we are also unable to sort the list.</p>
+<p>Therefore, we will break ties in correlation by considering which words appear the most frequently.</p>
+<pre class="r"><code># democratic platform
+dHighestAssoc &lt;- findAssocs(dtdm, freq1972, 0.999)
+dHighestAssoc &lt;- unlist(dHighestAssoc)
+dHighestAssoc &lt;- names(dHighestAssoc)
+dHighestAssoc &lt;- gsub(&quot;^.*\\.&quot;,&quot;&quot;, dHighestAssoc) # gives list of words with association of approximately 1
+dHighestAssoc &lt;- as.data.frame(dHighestAssoc)
+names(dHighestAssoc) &lt;- &quot;word&quot;
+dHighestAssocFreq &lt;- merge(dHighestAssoc, d, by=&quot;word&quot;) # merge with frequency df
+dHighestAssocFreq &lt;- dHighestAssocFreq[order(-dHighestAssocFreq$freq),] # order by frequency
+dHighestAssocFreq[c(1:2),] # get top two words</code></pre>
+<pre><code>##      word freq
+## 4   feder   54
+## 10 provid   47</code></pre>
+<pre class="r"><code># republican platform
+rHighestAssoc &lt;- findAssocs(rtdm, freq1972, 0.9984)
+rHighestAssoc &lt;- unlist(rHighestAssoc)
+rHighestAssoc &lt;- names(rHighestAssoc)
+rHighestAssoc &lt;- gsub(&quot;^.*\\.&quot;,&quot;&quot;, rHighestAssoc) # gives list of words with association of approximately 1
+rHighestAssoc &lt;- as.data.frame(rHighestAssoc)
+names(rHighestAssoc) &lt;- &quot;word&quot;
+rHighestAssocFreq &lt;- merge(rHighestAssoc, d, by=&quot;word&quot;) # merge with frequency df
+rHighestAssocFreq &lt;- rHighestAssocFreq[order(-rHighestAssocFreq$freq),] # order by frequency
+rHighestAssocFreq[c(1:2),]</code></pre>
+<pre><code>##       word freq
+## 69 program   84
+## 49   local   58</code></pre>
+<p>For the Democratic platforms, the word “state” is most highly associated with “feder” (appearing 54 times) and “provid” (appearing 47 times), after we break ties in correlation by considering the words that appear most frequently.</p>
+<p>For the Republican platforms, the word “state” is most highly associated with “program” (appearing 84 times) and “local” (appearing 58 times), after we break ties in correlation by considering the words that appear most frequently.</p>
+<p>From these highly associated words, we can understand in which context the word “state” is being used and how the party platforms may differ. Interestingly, there is a direct juxtaposition in the scope focuses of the two: the Democratic platforms are focused on the federal government, while the Republican platforms are focused on the local government. Both platforms seem to be focused on new initiatives, with “provid” in the Democratic platforms and “program” in the Republican platform, though we note it is difficult to make inferences about exactly in which contexts these words are used.</p>
 </div>
 </div>
 <div id="problem-2-scraping-presidential-communications-for-the-117th-house" class="section level2">
