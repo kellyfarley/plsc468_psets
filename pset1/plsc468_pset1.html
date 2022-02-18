@@ -373,7 +373,7 @@ corpus &lt;- tm_map(corpus, removeNumbers)</code></pre>
 <pre class="r"><code># creating a term document matrix
 tdm &lt;- TermDocumentMatrix(corpus)</code></pre>
 <p><strong>List of 20 most and 20 least frequent words across entire corpus</strong></p>
-<p>20 most common worsd across entire corpus:</p>
+<p>20 most frequent words across entire corpus:</p>
 <pre class="r"><code># combining the tdms of the 6 platforms into one matrix
 m &lt;- as.matrix(tdm)
 # reorganizing the matrix to get the most common words
@@ -401,7 +401,7 @@ head(d, 20)</code></pre>
 ## provid       provid   47
 ## econom       econom   46
 ## need           need   45</code></pre>
-<p>20 least common words across entire corpus:</p>
+<p>20 least frequent words across entire corpus:</p>
 <pre class="r"><code># reorganizing the maatrix to get the least common words
 v2 &lt;- sort(rowSums(m),decreasing=FALSE)
 d2 &lt;- data.frame(word = names(v2),freq=v2)
@@ -487,8 +487,8 @@ Reduce(intersect, list(D1972, R1972))</code></pre>
 <p>Words repeating across the 3 Democratic platforms: “state” and “public.”</p>
 <p>Words repeating across the 1972 Republican and Democratic platforms: “state” and “public.”</p>
 </div>
-<div id="e-check" class="section level3">
-<h3>1e (CHECK)</h3>
+<div id="e" class="section level3">
+<h3>1e</h3>
 <p><strong>Most frequently repeating word from D and R platforms in 1972</strong></p>
 <pre class="r"><code># recall that D 1972 is the 2nd text in the corpus
 freq10[2]</code></pre>

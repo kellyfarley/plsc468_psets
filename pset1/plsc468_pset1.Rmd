@@ -178,7 +178,7 @@ tdm <- TermDocumentMatrix(corpus)
 
 **List of 20 most and 20 least frequent words across entire corpus**
 
-20 most common worsd across entire corpus:
+20 most frequent words across entire corpus:
 
 ```{r}
 # combining the tdms of the 6 platforms into one matrix
@@ -189,7 +189,7 @@ d <- data.frame(word = names(v),freq=v)
 head(d, 20)
 ```
 
-20 least common words across entire corpus:
+20 least frequent words across entire corpus:
 
 ```{r}
 # reorganizing the maatrix to get the least common words
@@ -232,7 +232,7 @@ Words repeating across the 3 Democratic platforms: "state" and "public."
 
 Words repeating across the 1972 Republican and Democratic platforms: "state" and "public."
 
-### 1e (CHECK)
+### 1e
 
 **Most frequently repeating word from D and R platforms in 1972**
 
