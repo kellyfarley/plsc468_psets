@@ -270,9 +270,6 @@ We look at the top words associated with the word "state" in each the Democratic
 
 ```{r}
 findAssocs(dtdm, freq1972, 0.994)
-#topDem <- as.data.frame(unlist(topDem))
-#names(topDem) <- "association"
-#topDem <- topDem[order(association),]
 
 findAssocs(rtdm, freq1972, 0.9984)
 ```
