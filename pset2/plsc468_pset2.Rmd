@@ -1,0 +1,86 @@
+---
+title: "PLSC 468 Pset 2"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "3/11/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+```
+
+# Problem 1: Supervised Learning to Classify Federalist Papers
+
+Objective: classify 15 disputed Federalist papers as written by either Madison (H = 0) or Hamilton (H = 1)
+
+Data: matrix "papers" with 85 "papers" and "classes;" 51 known-Hamilton, 5 known-Jay, 14 known-Madison
+
+Process: Split 65 known Madison and Hamilton papers into training and testing sets (use discretion on proportion but consider overfitting vs validation tradeoffs); Calibrate method on training set; Evaluate method on training set (recording relevant validation measures); Classify missing papers
+
+Output: 4x5 validation table with rows for each of the classification approaches (a) stop-words, b) non-stopwords, c) fightin' words weights, d) naive bayes) and columns for 1) overall accuracy, 2) precision for Madison, 3) precision for Hamilton, 4) recall for Madison, and 5) recall for Hamilton.
+
+Loading papers from .rda file:
+
+```{r}
+load(file = "pset2/federalists.Rdata")
+```
+
+Cleaning, stemming, and removing rare/frequent words: (optional) (to do)
+
+```{r}
+```
+
+## a) Mosteller and Wallace stopword dictionary approach
+
+Calculate word weights only using stopwords in known Federalist papers
+
+Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
+
+What is your classification?
+
+b) Non-stopwords
+
+Replicate part a) using non-stopwords
+
+Calculate weights using same word-weighting approach
+
+Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
+
+What is your classification?
+
+c) quasi-Bayesian Fightin' Words
+
+Use discretion over whether to include or discard stopwords or rare/frequent words
+
+Produce Hamilton-discrimination score
+
+What is your classification?
+
+Which 5 words are scored the most, and which five are the least Hamiltonian?
+
+d) Naive Bayes
+
+Write a function to perform Naive Bayes classification to predict missing author indicators
+
+Make sure to use Laplace smoothing
+
+Use discretion on whether to discard stopwords or other rare/frequent words
+
+Compare results to naiveBayes()
+
+What are your classifications?
