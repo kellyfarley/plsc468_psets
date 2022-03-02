@@ -52,7 +52,7 @@ Cleaning, stemming, and removing rare/frequent words: (optional) (to do)
 
 Calculate word weights only using stopwords in known Federalist papers
 
-Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
+Consider appropriate document-scores threshold to classify documents and trim word weights appropriately (???)
 
 What is your classification?
 
@@ -83,10 +83,9 @@ for(j in 1:length(stops)){
 
 non.dtm  = dtm[,non.stops]
 stop.dtm = dtm[,!non.stops]
+```
 
-# plot(rowSums(non.dtm),ylim=c(0,100))
-# points(rowSums(stop.dtm),col='red')
-
+```{r}
 # define training set
 
 # get row IDs for known and disputed papers
@@ -102,6 +101,10 @@ disputedpapers <- papers[disputedpapers_ids,]
 knownpapers <- knownpapers %>%
   mutate(classes = case_when(classes=="hamilton" ~ 1,
                    classes=="madison" ~ 0))
+
+```
+
+```{r}
 
 # split stop.dtm into known and disputed
 stop.dtm.known <- stop.dtm[knownpapers_ids,]
@@ -145,8 +148,153 @@ dictionW=function(x,y){
 }
 
 w.train=dictionW(x=x.train,y=y.train)
+top.stop=sort(abs(w.train),decreasing=T)[1:20]
+
+# trimming
+w.train[which(abs(w.train)<sd(abs(w.train)))]=0
+
+z.train=x.train
+for(j in 1:length(w.train)){
+	z.train[,j]=w.train[j]*x.train[,j]
+}
+
+Z.train=rowSums(z.train)
+
+train.prediction=as.numeric(Z.train>mean(Z.train))
+
+# b) testing set
+
+z.test=x.test
+for(j in 1:length(w.train)){
+	z.test[,j]=w.train[j]*x.test[,j]
+}
+
+Z.test=rowSums(z.test)
+
+test.prediction=as.numeric(Z.test>mean(Z.test))
+1-mean(abs(test.prediction-y.test))
+# accuracy
+
+1-mean(abs(train.prediction-y.train))
+
+# c) predicting left unknowns
+
+z.pred=x.pred
+for(j in 1:length(w.train)){
+	z.pred[,j]=w.train[j]*x.pred[,j]
+}
+
+Z.pred=rowSums(z.pred)
+
+pred.prediction=as.numeric(Z.pred>mean(Z.pred))
+stop.prediction <- pred.prediction
+
+# e) useful to look at most predictive words
+
+names(top.stop)
+```
+
+Our classifications are stored in the variable pred.prediction, where 1 represents Hamilton authorship and 0 represents Madison authorship.
+
+```{r}
+# function to calculate accuracy, precision, recall
+# see https://blog.paperspace.com/deep-learning-metrics-precision-recall-accuracy/ for definitions
+
+apr <- function(train.prediction, y.train){
+  
+  add.vector <- train.prediction + y.train
+  # 2's indicate truly H, 0's indicate truly M
+  
+  true_hamilton <- sum(add.vector==2)
+  true_madison <- sum(add.vector==0)
+  
+  sub.vector <- y.train - train.prediction
+  # +1 indicates classified as H when M, -1 indicates classified as M when H
+  
+  false_hamilton <- sum(add.vector==1)
+  false_madison <- sum(add.vector==-1)
+  
+  # overall accuracy
+  accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
+  
+  # precision for madison
+  precision_madison <- true_madison / (true_madison + false_hamilton)
+  
+  # precision for hamilton
+  precision_hamilton <- true_hamilton / (true_hamilton + false_madison)
+  
+  # recall for madison
+  recall_madison <- true_madison / (true_madison + false_madison)
+  
+  # recall for hamilton
+  recall_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
+  
+  # compiled results
+  results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
+  return(results)
+}
+
+stop_results <- apr(train.prediction, y.train)
+```
+
+stop_results contains the vector of accuracy, precision, and recall results that will be used to create the final matrix.
+
+## b) Non-stopwords
+
+Replicate part a) using non-stopwords
+
+Calculate weights using same word-weighting approach
+
+Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
+
+What is your classification?
+
+```{r}
+# split non.dtm into known and disputed
+non.dtm.known <- non.dtm[knownpapers_ids,]
+non.dtm.disputed <- non.dtm[disputedpapers_ids,]
+
+N=nrow(non.dtm.known)
+set.seed(1005)
+s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+
+# train with 1/2 of known
+x.train=non.dtm.known[which(s.vec==1),]
+y.train=knownpapers$classes[which(s.vec==1)]
+
+# test with other 1/2 of known
+x.test=non.dtm.known[which(s.vec==2),]
+y.test=knownpapers$classes[which(s.vec==2)]
+
+# predicted disputed
+x.pred=non.dtm.disputed
+#y.pred is unknown
+
+# a) produce a predictor score in training set
+
+dictionW=function(x,y){
+	sum.1=colSums(x[which(y==1),])
+	sum.0=colSums(x[which(y==0),])
+
+	rate.1=sum.1/(sum.0+sum.1)
+	rate.0=sum.0/(sum.0+sum.1)
+	var.1=rate.1*(1-rate.1)
+	var.0=rate.0*(1-rate.0)
+
+	# degenerate words get 0 weight
+	rate.1[which(sum.1==0)]=0
+	rate.0[which(sum.0==0)]=0
+	var.1[which(sum.1==0)]=1
+	var.0[which(sum.0==0)]=1
+
+	w=(rate.1-rate.0)/(var.1+var.0)
+	return(w)
+}
+
+w.train=dictionW(x=x.train,y=y.train)
 top.non=sort(abs(w.train),decreasing=T)[1:20]
 
+# trimming
 w.train[which(abs(w.train)<sd(abs(w.train)))]=0
 
 z.train=x.train
@@ -182,23 +330,18 @@ for(j in 1:length(w.train)){
 Z.pred=rowSums(z.pred)
 
 pred.prediction=as.numeric(Z.pred>mean(Z.pred))
+nonstop.prediction <- pred.prediction
 
 # e) useful to look at most predictive words
 
 names(top.non)
 ```
 
-b) Non-stopwords
+```{r}
+nonstop_results <- apr(train.prediction, y.train)
+```
 
-Replicate part a) using non-stopwords
-
-Calculate weights using same word-weighting approach
-
-Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
-
-What is your classification?
-
-c) quasi-Bayesian Fightin' Words
+## c) quasi-Bayesian Fightin' Words
 
 Use discretion over whether to include or discard stopwords or rare/frequent words
 
@@ -208,7 +351,7 @@ What is your classification?
 
 Which 5 words are scored the most, and which five are the least Hamiltonian?
 
-d) Naive Bayes
+## d) Naive Bayes
 
 Write a function to perform Naive Bayes classification to predict missing author indicators
 
@@ -219,3 +362,22 @@ Use discretion on whether to discard stopwords or other rare/frequent words
 Compare results to naiveBayes()
 
 What are your classifications?
+
+## Matrix of Classifications
+
+```{r}
+classMat <- rbind(stop.prediction, nonstop.prediction)
+classMat <- as.data.frame(classMat)
+colnames(classMat) <- disputedpapers_ids
+classMat
+```
+
+## Matrix of Results
+
+```{r}
+resultsMat <- rbind(stop_results, nonstop_results)
+colnames(resultsMat) <- c("overall accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
+resultsMat <- as.data.frame(resultsMat)
+resultsMat <- round(resultsMat, 2)
+resultsMat
+```
