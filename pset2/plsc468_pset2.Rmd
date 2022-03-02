@@ -22,6 +22,9 @@ wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
+library(stringr)
+library(tm)
+library(tidyverse)
 ```
 
 # Problem 1: Supervised Learning to Classify Federalist Papers
@@ -52,6 +55,136 @@ Calculate word weights only using stopwords in known Federalist papers
 Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
 
 What is your classification?
+
+```{r}
+# using stop words from stopword() package
+stops <- stopwords(kind = "en")
+
+# note apostrophes are not removed in stops, but are in our texts
+stops <- c(gsub(stops, pattern="[']", replace=''))
+
+# make corpus
+texts=VCorpus(VectorSource(papers[,1]))
+
+# remove non stop words
+
+dtm = as.matrix(DocumentTermMatrix(texts))
+non.stops=array(TRUE,ncol(dtm))
+
+stops=sort(stops)
+
+col.names=colnames(dtm)
+for(j in 1:length(stops)){
+	ik=which(stops[j]==col.names)
+	if(length(ik)>0){
+		non.stops[ik]=F
+	}
+}
+
+non.dtm  = dtm[,non.stops]
+stop.dtm = dtm[,!non.stops]
+
+# plot(rowSums(non.dtm),ylim=c(0,100))
+# points(rowSums(stop.dtm),col='red')
+
+# define training set
+
+# get row IDs for known and disputed papers
+papers <- as.data.frame(papers)
+knownpapers_ids <- which(papers$classes == c("hamilton", "madison"), arr.ind=TRUE)
+disputedpapers_ids <- which(papers$classes == "disputed", arr.ind=TRUE)
+
+# split papers into known and disputed
+knownpapers <- papers[knownpapers_ids,]
+disputedpapers <- papers[disputedpapers_ids,]
+
+# recode known papers into 0 (madison) and 1 (hamilton)
+knownpapers <- knownpapers %>%
+  mutate(classes = case_when(classes=="hamilton" ~ 1,
+                   classes=="madison" ~ 0))
+
+# split stop.dtm into known and disputed
+stop.dtm.known <- stop.dtm[knownpapers_ids,]
+stop.dtm.disputed <- stop.dtm[disputedpapers_ids,]
+
+N=nrow(stop.dtm.known)
+set.seed(1005)
+s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+
+# train with 1/2 of known
+x.train=stop.dtm.known[which(s.vec==1),]
+y.train=knownpapers$classes[which(s.vec==1)]
+
+# test with other 1/2 of knwon
+x.test=stop.dtm.known[which(s.vec==2),]
+y.test=knownpapers$classes[which(s.vec==2)]
+
+# predicted disputed
+x.pred=stop.dtm.disputed
+#y.pred is unknown
+
+# a) produce a predictor score in training set
+
+dictionW=function(x,y){
+	sum.1=colSums(x[which(y==1),])
+	sum.0=colSums(x[which(y==0),])
+
+	rate.1=sum.1/(sum.0+sum.1)
+	rate.0=sum.0/(sum.0+sum.1)
+	var.1=rate.1*(1-rate.1)
+	var.0=rate.0*(1-rate.0)
+
+	# degenerate words get 0 weight
+	rate.1[which(sum.1==0)]=0
+	rate.0[which(sum.0==0)]=0
+	var.1[which(sum.1==0)]=1
+	var.0[which(sum.0==0)]=1
+
+	w=(rate.1-rate.0)/(var.1+var.0)
+	return(w)
+}
+
+w.train=dictionW(x=x.train,y=y.train)
+top.non=sort(abs(w.train),decreasing=T)[1:20]
+
+z.train=x.train
+for(j in 1:length(w.train)){
+	z.train[,j]=w.train[j]*x.train[,j]
+}
+
+Z.train=rowSums(z.train)
+
+train.prediction=as.numeric(Z.train>mean(Z.train))
+
+# b) testing set
+
+z.test=x.test
+for(j in 1:length(w.train)){
+	z.test[,j]=w.train[j]*x.test[,j]
+}
+
+Z.test=rowSums(z.test)
+
+test.prediction=as.numeric(Z.test>mean(Z.test))
+1-mean(abs(test.prediction-y.test))
+
+1-mean(abs(train.prediction-y.train))
+
+# c) predicting left unknowns
+
+z.pred=x.pred
+for(j in 1:length(w.train)){
+	z.pred[,j]=w.train[j]*x.pred[,j]
+}
+
+Z.pred=rowSums(z.pred)
+
+pred.prediction=as.numeric(Z.pred>mean(Z.pred))
+
+# e) useful to look at most predictive words
+
+names(top.non)
+```
 
 b) Non-stopwords
 
