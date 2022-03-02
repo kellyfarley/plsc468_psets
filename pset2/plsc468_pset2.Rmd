@@ -196,7 +196,7 @@ stop.prediction <- pred.prediction
 names(top.stop)
 ```
 
-Our classifications are stored in the variable pred.prediction, where 1 represents Hamilton authorship and 0 represents Madison authorship.
+Our classifications are stored in the variable pred.prediction, where 1 represents Hamilton authorship and 0 represents Madison authorship. Using only stop predict that there are eight Madison documents (H=0) and 7 Hamilton Ddocuments (H=1)
 
 ```{r}
 # function to calculate accuracy, precision, recall
@@ -342,40 +342,6 @@ names(top.non)
 
 ```{r}
 # function to calculate accuracy, precision, recall
-
-apr.non <- function(train.prediction, y.train){
-  
-  add.vector <- train.prediction + y.train
-  # 2's indicate truly H, 0's indicate truly M
-  
-  true_hamilton <- sum(add.vector==2)
-  true_madison <- sum(add.vector==0)
-  
-  sub.vector <- y.train - train.prediction
-  # +1 indicates classified as H when M, -1 indicates classified as M when H
-  
-  false_hamilton <- sum(add.vector==1)
-  false_madison <- sum(add.vector==-1)
-  
-  # overall accuracy
-  accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
-  
-  # precision for madison
-  precision_madison <- true_madison / (true_madison + false_madison)
-  
-  # precision for hamilton
-  precision_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
-  
-  # recall for madison
-  recall_madison <- true_madison / (true_madison + false_hamilton)
-  
-  # recall for hamilton
-  recall_hamilton <- true_hamilton / (true_hamilton + false_madison)
-  
-  # compiled results
-  results.non <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
-  return(results.non)
-}
 nonstop_results <- apr.non(train.prediction, y.train)
 ```
 
