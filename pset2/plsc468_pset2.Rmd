@@ -342,7 +342,7 @@ names(top.non)
 
 ```{r}
 # function to calculate accuracy, precision, recall
-nonstop_results <- apr.non(train.prediction, y.train)
+nonstop_results <- apr(train.prediction, y.train)
 ```
 
 ## c) quasi-Bayesian Fightin' Words
