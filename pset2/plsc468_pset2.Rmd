@@ -354,6 +354,45 @@ Produce Hamilton-discrimination score
 What is your classification?
 
 Which 5 words are scored the most, and which five are the least Hamiltonian?
+TO DO: someone please check i think this is wrong 
+-essentially he said in OH that we should use the DictionW function and substitute in 
+the correct dirichlet instead of averages
+
+```{r}
+#a: only non-stop words  
+x <- non.dtm
+y <- knownpapers$classes
+
+#b: fighting words function 
+FightinW=function(x,y){
+  outs=list()
+	sum.1=colSums(x[which(y==1),])
+	sum.0=colSums(x[which(y==0),])
+	outs[[1]]=sum.1-sum.0 
+
+  rate.1=sum.1/sum(sum.1)
+  rate.0=sum.0/sum(sum.0)
+  outs[[2]]=rate.1-rate.0
+  
+	var.1=rate.1*(1-rate.1)
+	var.0=rate.0*(1-rate.0)
+	
+  #dirichlet weights
+  a.1=sum.1+1
+  a.0=sum.0+1
+  dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
+  dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0)) 
+
+	w=(dirch.1-dirch.0)/(var.1+var.0)
+	return(w) }
+
+#selecting Top 5 fightin words
+w.train=FightinW(x=x.train,y=y.train)
+top.non=sort(abs(w.train),decreasing=T)[1:5]
+#this seems off, lmk what you guys think 
+bottom.non=sort(abs(w.train),decreasing =F)[1:5]
+```
+
 
 ## d) Naive Bayes
 
