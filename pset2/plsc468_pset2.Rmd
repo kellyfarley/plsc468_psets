@@ -218,16 +218,16 @@ apr <- function(train.prediction, y.train){
   accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
   
   # precision for madison
-  precision_madison <- true_madison / (true_madison + false_hamilton)
+  precision_madison <- true_madison / (true_madison + false_madison)
   
   # precision for hamilton
-  precision_hamilton <- true_hamilton / (true_hamilton + false_madison)
+  precision_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
   
   # recall for madison
-  recall_madison <- true_madison / (true_madison + false_madison)
+  recall_madison <- true_madison / (true_madison + false_hamilton)
   
   # recall for hamilton
-  recall_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
+  recall_hamilton <- true_hamilton / (true_hamilton + false_madison)
   
   # compiled results
   results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
@@ -380,4 +380,6 @@ colnames(resultsMat) <- c("overall accuracy", "precision_madison", "precision_ha
 resultsMat <- as.data.frame(resultsMat)
 resultsMat <- round(resultsMat, 2)
 resultsMat
+
+# try trimming of .1, .2, .3, .5 and see which gives the best results
 ```
