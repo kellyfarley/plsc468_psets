@@ -1,7 +1,7 @@
 ---
 title: "PLSC 468 Pset 1"
 author: "Kelly Farley, Numi Katz, and Chelsea Wang"
-date: "2/9/2022"
+date: "2/18/2022"
 output:
   html_document:
     toc: yes
@@ -35,21 +35,26 @@ library(rvest)
 
 ## PROBLEM 1: scraping Maine Encyclopedia
 
-### 1a (add explanation)
+### 1a
 
 **Use RCurl::getURL to scrape 1968, 1972, 1976 state platforms for ME D and R parties**
 
 ```{r}
 # get urls for both republican and democrat platforms for 1968, 1972, 1976
-years=1968+4*0:2
-urlsR=paste("https://maineanencyclopedia.com/republican-party-platform-",years,"/",sep='')
-urlsD=paste("https://maineanencyclopedia.com/democratic-party-platform-",years,"/",sep='')
+years <- 1968+4*0:2
+urlsR <- paste("https://maineanencyclopedia.com/republican-party-platform-",years,"/",sep='')
+urlsD <- paste("https://maineanencyclopedia.com/democratic-party-platform-",years,"/",sep='')
 
 # combining urls
 urls <- c(urlsD, urlsR)
+
+# print urls
+paste(urls)
 ```
 
 **Use gsub and regular expressions to clean text**
+
+Note that only the text for the first url is printed to save space when reading the knitted HTML, but the text for all six urls is cleaned and stored in the variable cleantxt.
 
 ```{r}
 # looping thru the 6 party platforms
@@ -84,19 +89,25 @@ for (i in 1:length(urls)){
   cleantxt[i] <- txts
 }
 
-cleantxt
+# print first entry to demonstrate cleaning
+cleantxt[1]
 ```
 
 **How well did you do?**
 
-### 1b (revise explanation)
+Using gsub and a series of regular expressions, we were able to remove all HTML attributes, text before and after the preamble + platform, and extraneous white spaces and extra characters. The capitalization and punctuation is preserved. We note that there is an issue with the all-caps words: there is not a space between between the all-caps word and its surrounding lowercase words, an issue we were unable to address. Overall, though, gsub proved to be an effective method for text cleaning.
+
+### 1b
 
 **Use htmlToText on raw platform text to redo cleaning**
+
+Note that only the text for the first url is printed to save space when reading the knitted HTML, but the text for all six urls is cleaned and stored in the variable txts_1b.
 
 ```{r}
 # download htmlToText function
 download.file("https://drive.google.com/u/0/uc?id=1LuMKRhzPBHWGzVM-Bs64n_ciNMoHHbPd", paste(wd, "/functions/htmlToText.R", sep=""))
 
+# source htmlToText function
 source(paste(wd, "/functions/htmlToText.R", sep=""))
 
 do.run=T
@@ -106,55 +117,68 @@ if(do.run==T){
     txts_1b[i]=htmlToText(urls[i])
   }
 }
+
+txts_1b[1]
 ```
 
 **Comparison to 1a?  What are the remaining errant strings left here that your effort removed, if any? The reverse? Are the errant strings consistent across each of the platforms? Or is there much variation here?**
 
-Compared to using gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean.
+Compared to the use of gsub and regular expressions in 1a, it is much easier to use htmlToText in 1b - it is done with fewer lines of code and less manual effort to think about precisely what to clean. Much like in 1a, we extract the text with capitalization and punctuation preserved.
 
-Compared to 1a, However, punctuation, uppercase letters, and numbers were not removed, and the document was not stemmed, all issues that were addressed manually in 1a.
+ Much of the work we did manually in 1a was done automatically in 1b, with htmlToText() removing many of the HTML attributes and extraneous white spaces.
 
-Errant strings do not appear across both platforms. There is variation in precisely what is cleaned, though this can be adjusted if the user chooses to address more with gsub and regular expressions.
+However, here are errant strings present in 1b that we removed manually in 1a. There are many leftover HTML tags, such as \n for new lines and \t for tabs. There are leftover special characters, such as â€. There is also extraneous text from the website that is not related to the party platform.
 
-### 1c (done)
+We note that our issue with a lack of spacing around all-caps words in 1a is not present in 1b.
+
+There are no errant strings that appear across both platforms since we addressed almost all of the errant strings manually in 1a. There is variation in precisely what is cleaned based on how thorough one is with gsub.
+
+### 1c
 
 **Pick cleanest version and use tm package to turn text data into corpus object**
 
-We use the version from 1a.
+We use the version from 1a, cleaned manually with gsub and regular expressions.
 
 ```{r}
 # creating a corpus
-corpus=Corpus(VectorSource(cleantxt))
-corpus_raw=corpus
+corpus <- Corpus(VectorSource(cleantxt))
+corpus_raw <- corpus
 ```
 
 **Use tm_map and package functions to pre-process; transform to lowercase, remove punctuation, remove stop words**
 
 ```{r}
 # stem using porter algorithm
-corpus = tm_map(corpus, stemDocument)
+corpus <- tm_map(corpus, stemDocument)
+
 # remove uppercase
-corpus = tm_map(corpus, tolower)
+corpus <- tm_map(corpus, tolower)
+
 # remove stop words
-corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
 # remove punctuation
-corpus = tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removePunctuation)
+
 # remove extra white space
-corpus = tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, stripWhitespace)
+
 # remove numbers
-corpus = tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeNumbers)
 ```
 
-### 1d (add least frequent)
+### 1d
 
 **Term-document matrix with all remaining unigrams**
 
 ```{r}
 # creating a term document matrix
-tdm = TermDocumentMatrix(corpus)
+tdm <- TermDocumentMatrix(corpus)
 ```
 
-**List of 20 most and 20 least frequent words across entire corpus** (add least frequent)
+**List of 20 most and 20 least frequent words across entire corpus**
+
+20 most frequent words across entire corpus:
 
 ```{r}
 # combining the tdms of the 6 platforms into one matrix
@@ -163,7 +187,11 @@ m <- as.matrix(tdm)
 v <- sort(rowSums(m),decreasing=TRUE)
 d <- data.frame(word = names(v),freq=v)
 head(d, 20)
+```
 
+20 least frequent words across entire corpus:
+
+```{r}
 # reorganizing the maatrix to get the least common words
 v2 <- sort(rowSums(m),decreasing=FALSE)
 d2 <- data.frame(word = names(v2),freq=v2)
@@ -188,10 +216,10 @@ R1968 <- names(freq10[4][[1]])
 R1972 <- names(freq10[5][[1]])
 R1976 <- names(freq10[6][[1]])
 
-# words that repeaat amonfg the 3 R platforms
+# words that repeat among the 3 R platforms
 Reduce(intersect, list(R1968,R1972,R1976))
 
-# words that repeaat among the 3 D platforms
+# words that repeat among the 3 D platforms
 Reduce(intersect, list(D1968,D1972,D1976))
 
 # words that repeat across the 1972 D and R platforms
@@ -204,14 +232,23 @@ Words repeating across the 3 Democratic platforms: "state" and "public."
 
 Words repeating across the 1972 Republican and Democratic platforms: "state" and "public."
 
-### 1e (to do)
+### 1e
 
-**Most frequently repeating word from D and R platforms in 1982**
+**Most frequently repeating word from D and R platforms in 1972**
 
-Most frequently repeating word from D and 1972: state
+```{r}
+# recall that D 1972 is the 2nd text in the corpus
+freq10[2]
+
+# recall that R 1972 is the 5th text in the corpus
+freq10[5]
+```
+
+The same word repeats most frequently in both the Democratic and Republican platforms in 1972: "state."
 
 **2 association tables for each word using findAssocs: first D, then R**
 
+Since the same word repeats most frequently, we give a total of 2 association tables for the word "state," the first for the Democratic platforms and the second for the Republican platforms. We use a correlation of 0.99.
 
 ```{r}
 # dem tdm
@@ -219,20 +256,51 @@ dtdm <- TermDocumentMatrix(corpus[1:3])
 
 # republican tdm
 rtdm <- TermDocumentMatrix(corpus[4:6])
-```
 
+freq1972 <- "state"
 
-```{r}
-#dem platforms
-findAssocs(dtdm, "state", 0.99996)
+findAssocs(dtdm, freq1972, 0.99)
 
-#republican platforms
-findAssocs(rtdm, "state", 0.9984)
+findAssocs(rtdm, freq1972, 0.99)
 ```
 
 **What 4 words have highest association with top 2 words for D v R? What might this tell us about policy differences between two parties?**
 
-## PROBLEM 2: scraping presidential communications for the 117th House (in progress)
+We look at the top words associated with the word "state" in each the Democratic and Republican platforms. Note that there are many word pairs with a correlation approaching 1. Because findAssocs() returns rounded associations (in this case, all rounded to 1), we are unable to find a cutoff correlation minimum that allows us to isolate only the highest assocations and we are also unable to sort the list.
+
+Therefore, we will break ties in correlation by considering which words appear the most frequently.
+
+```{r}
+# democratic platform
+dHighestAssoc <- findAssocs(dtdm, freq1972, 0.999)
+dHighestAssoc <- unlist(dHighestAssoc)
+dHighestAssoc <- names(dHighestAssoc)
+dHighestAssoc <- gsub("^.*\\.","", dHighestAssoc) # gives list of words with association of approximately 1
+dHighestAssoc <- as.data.frame(dHighestAssoc)
+names(dHighestAssoc) <- "word"
+dHighestAssocFreq <- merge(dHighestAssoc, d, by="word") # merge with frequency df
+dHighestAssocFreq <- dHighestAssocFreq[order(-dHighestAssocFreq$freq),] # order by frequency
+dHighestAssocFreq[c(1:2),] # get top two words
+
+# republican platform
+rHighestAssoc <- findAssocs(rtdm, freq1972, 0.9984)
+rHighestAssoc <- unlist(rHighestAssoc)
+rHighestAssoc <- names(rHighestAssoc)
+rHighestAssoc <- gsub("^.*\\.","", rHighestAssoc) # gives list of words with association of approximately 1
+rHighestAssoc <- as.data.frame(rHighestAssoc)
+names(rHighestAssoc) <- "word"
+rHighestAssocFreq <- merge(rHighestAssoc, d, by="word") # merge with frequency df
+rHighestAssocFreq <- rHighestAssocFreq[order(-rHighestAssocFreq$freq),] # order by frequency
+rHighestAssocFreq[c(1:2),]
+```
+
+For the Democratic platforms, the word "state" is most highly associated with "feder" (appearing 54 times) and "provid" (appearing 47 times), after we break ties in correlation by considering the words that appear most frequently.
+
+For the Republican platforms, the word "state" is most highly associated with "program" (appearing 84 times) and "local" (appearing 58 times), after we break ties in correlation by considering the words that appear most frequently.
+
+From these highly associated words, we can understand in which context the word "state" is being used and how the party platforms may differ. Interestingly, there is a direct juxtaposition in the scope focuses of the two: the Democratic platforms are focused on the federal government, while the Republican platforms are focused on the local government. Both platforms seem to be focused on new initiatives, with "provid" in the Democratic platforms and "program" in the Republican platform, though we note it is difficult to make inferences about exactly in which contexts these words are used.
+
+## PROBLEM 2: scraping presidential communications for the 117th House
 
 Goal: scrape abstract text, date, legislative committee(s) (if any)
 
@@ -240,83 +308,93 @@ Write a loop that will call series of urls for each message
 
 Turn in: 4 matrix objects (one for each type of communication; Presidential Message, Executive Communication, Petition, Memorial), with 3 columns (url, abstract text, committee locations) and N rows
 
-```{r eval = F}
-#Goal: scrape abstract text, date, legislative committee(s) (if any)
+Note - to save space in the knitted HTML, we are only printing the head of each of the matrices, but the entirety is stored in the variables exec, pres, pet, and mem.
+
+```{r}
+# Goal: scrape url, abstract text,legislative committee(s) (if any)
+# Process: initialize data frame; get urls; collect abstracts from "p" tag; collect committees from "li" tag; clean committee text; add to data frame
+
+matNames <- c("URL", "Abstract", "Committee") # to be used for all matrices
+
+# EXECUTIVE
 exec <- data.frame(matrix(ncol=3,nrow=0))
 
-# will need to add 4th column for committee
 for (i in 3414:1) 
 {
   url <- paste("https://www.congress.gov/house-communication/117th-congress/executive-communication/",i,"?s=1&r=",3415-i, sep='')
   obs <- read_html(GET(url, config(ssl_verifypeer = FALSE)))
+  # collecting abstracts
   nodes <- obs %>%
     html_nodes("p")
   text <- html_text(nodes)
-  #collecting abstracts
   abstract <- text[3]
-  #committees
-    comm_nodes <- obs %>%
-  html_nodes("li") 
+  # collecting committees
+  comm_nodes <- obs %>%
+    html_nodes("li") 
+  # cleaning committees
   x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
   committee <- comm_nodes[x]
   committee <- gsub("<[^<>]*>", "", committee)
   committee <- gsub("\n", "", committee, fixed = TRUE)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
-  committee <- paste(committee, collapse=", ")
-  #datafram
-  thisDat <- c(url, abstract,committee)
+  committee <- paste(committee, collapse=", ") # to account for multiple committees
+  # add to df
+  thisDat <- c(url, abstract, committee)
   exec <- rbind(exec, thisDat)
-  names(exec) <-  c("URL", "Abstract", "Committee")
+  names(exec) <-  matNames
 }
 
-
+head(exec)
 
 #PRESIDENTIAL MESSAGE 
 pres <- data.frame(matrix(ncol=3,nrow=0))
+
 for(i in 19:1)
 {
-  pres_url=paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
+  pres_url <- paste("https://www.congress.gov/house-communication/117th-congress/presidential-message/",i,"?s=3&r=", 20-i, sep='')
   obs <- read_html(GET(pres_url, config(ssl_verifypeer = FALSE)))
+  # collecting abstracts
   nodes <- obs %>%
     html_nodes("p") 
   text <- html_text(nodes)
-  #collecting abstracts
   abstract <- text[3]
-  #COMMITTEE
+  # collecting committees
   comm_nodes <- obs %>%
-  html_nodes("li") 
+    html_nodes("li") 
   x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
   committee <- comm_nodes[x]
   committee <- gsub("<[^<>]*>", "", committee)
-  #removes exactly in parens
+  # removes exactly in parens
   committee <- gsub("\n", "", committee, fixed = TRUE)
-  #removing date
+  # removes date
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
-  #making df 
+  # add to df
   thisDat <- c(url,abstract, committee)
   pres <- rbind(pres, thisDat)
-  names(pres) <-  c("URL", "Abstract","Committee")
+  names(pres) <-  matNames
 }
 
-
+head(pres)
 
 #PETITION
 pet <- data.frame(matrix(ncol=3,nrow=0))
+
 for(i in 96:1)
 {
   pet_url=paste("https://www.congress.gov/house-communication/117th-congress/petition/",i,"?s=3&r=", 97-i, sep='')
   obs <- read_html(GET(pet_url, config(ssl_verifypeer = FALSE)))
+  # collecting abstracts
   nodes <- obs %>%
     html_nodes("p") 
   text <- html_text(nodes)
-  #collecting abstracts
   abstract <- text[3]
-  #committees
-    comm_nodes <- obs %>%
-  html_nodes("li") 
+  # collecting committees
+  comm_nodes <- obs %>%
+    html_nodes("li")
+  # cleaning committees
   x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
   committee <- comm_nodes[x]
   committee <- gsub("<[^<>]*>", "", committee)
@@ -324,27 +402,30 @@ for(i in 96:1)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
-  #dataframe
+  # add to df
   thisDat <- c(url, abstract, committee)
-  pet <<- rbind(pet, thisDat)
-  names(pet) <-  c("URL", "Abstract","Committee")
+  pet <- rbind(pet, thisDat)
+  names(pet) <-  matNames
 }
 
+head(pet)
 
 #MEMORIAL 
 mem <- data.frame(matrix(ncol=3,nrow=0))
+
 for(i in 138:1)
 {
   mem_url=paste("https://www.congress.gov/house-communication/117th-congress/memorial/",i,"?s=3&r=", 139-i, sep='')
   obs <- read_html(GET(mem_url, config(ssl_verifypeer = FALSE)))
+  # collecting abstracts
   nodes <- obs %>%
     html_nodes("p") 
   text <- html_text(nodes)
-  #collecting abstracts
   abstract <- text[3]
-  #committees
+  # collecting committees
   comm_nodes <- obs %>%
-  html_nodes("li") 
+    html_nodes("li") 
+  # cleaning committees
   x <- grep("[0-9]{2}/[0-9]{2}/[0-9]{4}", comm_nodes)
   committee <- comm_nodes[x]
   committee <- gsub("<[^<>]*>", "", committee)
@@ -352,10 +433,11 @@ for(i in 138:1)
   committee <- gsub("[0-9]{2}/[0-9]{2}/[0-9]{4}", "", committee)
   committee <- gsub(" — ", "", committee, fixed = TRUE)
   committee <- paste(committee, collapse=", ")
+  # add to df
   thisDat <- c(url, abstract, committee)
   mem <- rbind(mem, thisDat)
-  names(mem) <-  c("URL", "Abstract", "Committee")
+  names(mem) <-  matNames
 }
 
-
+head(mem)
 ```
