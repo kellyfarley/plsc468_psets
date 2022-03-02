@@ -52,7 +52,7 @@ Cleaning, stemming, and removing rare/frequent words: (optional) (to do)
 
 Calculate word weights only using stopwords in known Federalist papers
 
-Consider appropriate document-scores threshold to classify documents and trim word weights appropriately
+Consider appropriate document-scores threshold to classify documents and trim word weights appropriately (???)
 
 What is your classification?
 
@@ -170,6 +170,7 @@ Z.test=rowSums(z.test)
 
 test.prediction=as.numeric(Z.test>mean(Z.test))
 1-mean(abs(test.prediction-y.test))
+# accuracy
 
 1-mean(abs(train.prediction-y.train))
 
@@ -188,6 +189,45 @@ pred.prediction=as.numeric(Z.pred>mean(Z.pred))
 
 names(top.stop)
 ```
+
+Our classifications are stored in the variable pred.prediction, where 1 represents Hamilton authorship and 0 represents Madison authorship.
+
+```{r}
+# function to calculate accuracy, precision, recall
+# see https://blog.paperspace.com/deep-learning-metrics-precision-recall-accuracy/ for definitions
+
+# overall accuracy: (TP + TN) / (TP + TN + FP + FN)
+add.vector <- train.prediction + y.train
+# 2's indicate truly H, 0's indicate truly M
+
+true_hamilton <- sum(add.vector==2)
+true_madison <- sum(add.vector==0)
+
+sub.vector <- y.train - train.prediction
+# +1 indicates classified as H when M (FP), -1 indicates classified as M when H (FN)
+
+false_hamilton <- sum(add.vector==1)
+false_madison <- sum(add.vector==-1)
+
+# overall accuracy: what ratio were truly madison and truly hamilton?
+accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
+
+# precision for madison
+precision_madison <- true_madison / (true_madison + false_hamilton)
+
+# precision for hamilton
+precision_hamilton <- true_hamilton / (true_hamilton + false_madison)
+
+# recall for madison
+recall_madison <- true_madison / (true_madison + false_madison)
+
+# recall for hamilton
+recall_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
+
+stop_results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
+```
+
+stop_results contains the vector of accuracy, precision, and recall results that will be used to create the final matrix.
 
 ## b) Non-stopwords
 
@@ -286,6 +326,41 @@ pred.prediction=as.numeric(Z.pred>mean(Z.pred))
 names(top.non)
 ```
 
+```{r}
+# calculating accuracy, precision, recall
+# see https://blog.paperspace.com/deep-learning-metrics-precision-recall-accuracy/ for defintions
+
+# overall accuracy: (TP + TN) / (TP + TN + FP + FN)
+add.vector <- train.prediction + y.train
+# 2's indicate truly H, 0's indicate truly M
+
+true_hamilton <- sum(add.vector==2)
+true_madison <- sum(add.vector==0)
+
+sub.vector <- y.train - train.prediction
+# +1 indicates classified as H when M (FP), -1 indicates classified as M when H (FN)
+
+false_hamilton <- sum(add.vector==1)
+false_madison <- sum(add.vector==-1)
+
+# overall accuracy: what ratio were truly madison and truly hamilton?
+accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
+
+# precision for madison
+precision_madison <- true_madison / (true_madison + false_hamilton)
+
+# precision for hamilton
+precision_hamilton <- true_hamilton / (true_hamilton + false_madison)
+
+# recall for madison
+recall_madison <- true_madison / (true_madison + false_madison)
+
+# recall for hamilton
+recall_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
+
+nonstop_results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
+```
+
 ## c) quasi-Bayesian Fightin' Words
 
 Use discretion over whether to include or discard stopwords or rare/frequent words
@@ -307,3 +382,13 @@ Use discretion on whether to discard stopwords or other rare/frequent words
 Compare results to naiveBayes()
 
 What are your classifications?
+
+## Matrix of Results
+
+```{r}
+finalMat <- rbind(stop_results, nonstop_results)
+colnames(finalMat) <- c("overall accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
+finalMat <- as.data.frame(finalMat)
+finalMat <- round(finalMat, 2)
+finalMat
+```
