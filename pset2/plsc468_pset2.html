@@ -536,10 +536,9 @@ nonstop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 </div>
 <div id="c-quasi-bayesian-fightin-words-numi" class="section level2">
 <h2>c) quasi-Bayesian Fightin’ Words (Numi?)</h2>
-<p>TO DO: someone please check i think this is wrong -essentially he said in OH that we should use the DictionW function and substitute in the correct dirichlet instead of averages</p>
 <p><em>Use discretion over whether to include or discard stopwords or rare/frequent words</em></p>
 <p>We will only be using the non-stopwords in the analysis that follows.</p>
-<p><em>Produce Hamilton-discrimination score (TODO: what are these?)</em></p>
+<p><em>Produce Hamilton-discrimination score</em> (TODO: what are these?)</p>
 <pre class="r"><code># fighting words weight function 
 
 FightinW=function(x,y){
@@ -565,7 +564,7 @@ FightinW=function(x,y){
     w=(dirch.1-dirch.0)/(var.1+var.0)
     return(w)
 }</code></pre>
-<p><em>What is your classification? (DONE?)</em></p>
+<p><em>What is your classification?</em></p>
 <pre class="r"><code># same steps as before, changing weighting method to &quot;dirch&quot;
 splitSets(non.dtm)
 testTrim(&quot;dirch&quot;)
@@ -595,7 +594,7 @@ runapr()</code></pre>
 <p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.</p>
 <pre class="r"><code>fightingW.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
 fightingW_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
-<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian? (TODO: what is going on here?)</em></p>
+<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian?</em> (TODO: what is going on here?)</p>
 <pre class="r"><code>#Word frequency 
 names(sort(abs(outs[[x]]),decreasing=T)[1:5])
 names(sort(abs(outs[[x]]),decreasing=F)[1:5])
@@ -605,11 +604,24 @@ names(sort(abs(outs[[x]]),decreasing=F)[1:5])
 </div>
 <div id="d-naive-bayes-chelsea" class="section level2">
 <h2>d) Naive Bayes (Chelsea?)</h2>
-<p><em>Write a function to perform Naive Bayes classification to predict missing author indicators</em></p>
-<p><em>Make sure to use Laplace smoothing</em></p>
 <p><em>Use discretion on whether to discard stopwords or other rare/frequent words</em></p>
-<p><em>Compare results to naiveBayes()</em></p>
-<p><em>What are your classifications?</em></p>
+<p>We will only be using the non-stopwords in the analysis that follows.</p>
+<p><em>Write a function to perform Naive Bayes classification to predict missing author indicators</em></p>
+<p><em>Make sure to use Laplace smoothing</em> (TODO)</p>
+<pre class="r"><code>splitSets(non.dtm) # to get test, train, predict global variables
+
+# use naive bayes, laplace smoothing class6 code to write function</code></pre>
+<p><em>What are your classifications?</em> (UPDATE NEEDED)</p>
+<pre class="r"><code># previous steps (probably need to change)
+testTrim(&quot;normal&quot;)
+runapr()
+print(resultsDf)</code></pre>
+<p><em>Compare results to naiveBayes()</em> (FROM CLASS 6 CODE)</p>
+<pre class="r"><code># econ package for naivebayes implementation
+outs=naiveBayes(y=y.train,x=x.train,laplace=1)
+test.pred=predict(outs,x.test)
+1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)
+table(test.pred,y.test)</code></pre>
 </div>
 <div id="matrix-of-classifications-in-progress" class="section level2">
 <h2>Matrix of Classifications (in progress)</h2>

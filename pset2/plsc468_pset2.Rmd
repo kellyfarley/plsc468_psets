@@ -22,6 +22,7 @@ wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
+library(e1071)
 library(stringr)
 library(tm)
 library(tidyverse)
@@ -345,15 +346,11 @@ nonstop_results <- as.numeric(resultsDf[1, ])
 
 ## c) quasi-Bayesian Fightin' Words (Numi?)
 
-TO DO: someone please check i think this is wrong 
--essentially he said in OH that we should use the DictionW function and substitute in 
-the correct dirichlet instead of averages
-
 *Use discretion over whether to include or discard stopwords or rare/frequent words*
 
 We will only be using the non-stopwords in the analysis that follows.
 
-*Produce Hamilton-discrimination score (TODO: what are these?)*
+*Produce Hamilton-discrimination score* (TODO: what are these?)
 
 ```{r}
 # fighting words weight function 
@@ -400,7 +397,7 @@ fightingW.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1]
 fightingW_results <- as.numeric(resultsDf[1, ])
 ```
 
-*Which 5 words are scored the most, and which five are the least Hamiltonian? (TODO: what is going on here?)*
+*Which 5 words are scored the most, and which five are the least Hamiltonian?* (TODO: what is going on here?)
 
 ```{r eval=F}
 #Word frequency 
@@ -413,15 +410,38 @@ names(sort(abs(outs[[x]]),decreasing=F)[1:5])
 
 ## d) Naive Bayes (Chelsea?)
 
-*Write a function to perform Naive Bayes classification to predict missing author indicators*
-
-*Make sure to use Laplace smoothing*
-
 *Use discretion on whether to discard stopwords or other rare/frequent words*
 
-*Compare results to naiveBayes()*
+We will only be using the non-stopwords in the analysis that follows.
 
-*What are your classifications?*
+*Write a function to perform Naive Bayes classification to predict missing author indicators*
+
+*Make sure to use Laplace smoothing* (TODO)
+
+```{r, eval = F}
+splitSets(non.dtm) # to get test, train, predict global variables
+
+# use naive bayes, laplace smoothing class6 code to write function
+```
+
+*What are your classifications?* (UPDATE NEEDED)
+
+```{r, eval=F}
+# previous steps (probably need to change)
+testTrim("normal")
+runapr()
+print(resultsDf)
+```
+
+*Compare results to naiveBayes()* (FROM CLASS 6 CODE)
+
+```{r, eval = F}
+# econ package for naivebayes implementation
+outs=naiveBayes(y=y.train,x=x.train,laplace=1)
+test.pred=predict(outs,x.test)
+1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)
+table(test.pred,y.test)
+```
 
 ## Matrix of Classifications (in progress)
 
