@@ -349,6 +349,7 @@ TO DO: someone please check i think this is wrong
 the correct dirichlet instead of averages
 
 ```{r eval=F}
+#this is his set up, i don't think i defined y correclty which is causing some problems 
 #a: only non-stop words  
 y <- knownpapers$classes
 x <- non.dtm
@@ -358,6 +359,7 @@ FightinW=function(x,y){
   outs=list()
 	sum.1=colSums(x[which(y==1),])
 	sum.0=colSums(x[which(y==0),])
+	#not totally sure what the "outs" are here 
 	outs[[1]]=sum.1-sum.0 
 
   rate.1=sum.1/sum(sum.1)
@@ -376,9 +378,10 @@ FightinW=function(x,y){
 	w=(dirch.1-dirch.0)/(var.1+var.0)
 	return(w) }
 
-w.train=FightinW(x=x.train,y=y.train)
-top.non=sort(abs(w.train),decreasing=F)[1:5]
-bottom.non=sort(abs(w.train),decreasing=T)[1:5]
+#Word frequency 
+names(sort(abs(outs[[x]]),decreasing=T)[1:5])
+names(sort(abs(outs[[x]]),decreasing=F)[1:5])
+
 
 #to do: select top five highest and lowest 
 ```
