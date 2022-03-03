@@ -172,13 +172,21 @@ With the function testTrim(), we try cutoffs of 0.1, 0.2, 0.3, and 0.5 to try to
 # trim values to test
 cutoffValues <- c(0.1, 0.2, 0.3, 0.5)
 
-ttp <- function(cutoff){
-  
+ttp <- function(cutoff, method){
   # produce a predictor score in training set
-  w.train=dictionW(x=x.train,y=y.train)
+
+  # for 1a, 1b
+  if(method=="normal"){
+    w.train <- dictionW(x=x.train,y=y.train)
+  }
   
-  # test different cutoffs for trimming
-  w.train[which(abs(w.train)<cutoff)]=0
+  # for dirch weights in 1c
+  if(method=="dirch"){
+    w.train <- FightinW(x=x.train,y=y.train)
+  }
+  
+  # test different cutoffs for trimming (TODO: IS THIS OK?)
+  w.train <- w.train[which(abs(w.train)<cutoff)]
   
   z.train=x.train
   
@@ -220,14 +228,14 @@ ttp <- function(cutoff){
   return(predictions)
 }
 
-testTrim <- function() {
+testTrim <- function(method) {
   # empty dataframe to store predictions
   cutoffPredictions <- data.frame(matrix(ncol = 3, nrow = length(cutoffValues)))
   names(cutoffPredictions) <- c("cutoff", "test.prediction", "pred.prediction")
  
   # try different cutoffs
    for(i in 1:length(cutoffValues)){
-    thisPrediction <- ttp(cutoffValues[[i]])
+    thisPrediction <- ttp(cutoffValues[[i]], method)
     # note have to convert data type from vector to string to store in data frame
     cutoffPredictions[i, ] <- c(cutoffValues[[i]], paste(thisPrediction[[1]], collapse=" "), paste(thisPrediction[[2]], collapse=" "))
    }
@@ -236,7 +244,7 @@ testTrim <- function() {
   cutoffPredictions <<- cutoffPredictions
 }
 
-testTrim()
+testTrim("normal")
 ```
 
 The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship
@@ -322,7 +330,7 @@ Fortunately, we benefit from all of the functions created in 1a and can accompli
 
 ```{r}
 splitSets(stop.dtm)
-testTrim()
+testTrim("normal")
 runapr()
 
 print(resultsDf)
@@ -335,49 +343,66 @@ nonstop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], 
 nonstop_results <- as.numeric(resultsDf[1, ])
 ```
 
-## c) quasi-Bayesian Fightin' Words (Numi)
+## c) quasi-Bayesian Fightin' Words (Numi?)
 
-Use discretion over whether to include or discard stopwords or rare/frequent words
-
-Produce Hamilton-discrimination score
-
-What is your classification?
-
-Which 5 words are scored the most, and which five are the least Hamiltonian?
 TO DO: someone please check i think this is wrong 
 -essentially he said in OH that we should use the DictionW function and substitute in 
 the correct dirichlet instead of averages
 
-```{r eval=F}
-#this is his set up, i don't think i defined y correclty which is causing some problems 
-#a: only non-stop words  
-y <- knownpapers$classes
-x <- non.dtm
+*Use discretion over whether to include or discard stopwords or rare/frequent words*
 
-#b: fighting words function 
+We will only be using the non-stopwords in the analysis that follows.
+
+*Produce Hamilton-discrimination score (TODO: what are these?)*
+
+```{r}
+# fighting words weight function 
+
 FightinW=function(x,y){
-  outs=list()
-	sum.1=colSums(x[which(y==1),])
+	# from FightinW in class5
+  sum.1=colSums(x[which(y==1),])
 	sum.0=colSums(x[which(y==0),])
-	#not totally sure what the "outs" are here 
-	outs[[1]]=sum.1-sum.0 
 
+	# from FightinW in class5
   rate.1=sum.1/sum(sum.1)
   rate.0=sum.0/sum(sum.0)
-  outs[[2]]=rate.1-rate.0
   
+  # from dictionW() code
 	var.1=rate.1*(1-rate.1)
 	var.0=rate.0*(1-rate.0)
 	
-  #dirichlet weights
+  #dirichlet weights (flattish weights)
   a.1=sum.1+1
   a.0=sum.0+1
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0)) 
 
+  # from dictionW() code
 	w=(dirch.1-dirch.0)/(var.1+var.0)
-	return(w) }
+	return(w)
+}
+```
 
+*What is your classification?*
+
+```{r}
+# same steps as before, changing weighting method to "dirch"
+splitSets(non.dtm)
+testTrim("dirch")
+runapr()
+print(resultsDf)
+```
+
+Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
+
+```{r}
+fightingW.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
+fightingW_results <- as.numeric(resultsDf[1, ])
+```
+
+*Which 5 words are scored the most, and which five are the least Hamiltonian? (TODO: what is going on here?)*
+
+```{r eval=F}
 #Word frequency 
 names(sort(abs(outs[[x]]),decreasing=T)[1:5])
 names(sort(abs(outs[[x]]),decreasing=F)[1:5])
@@ -386,23 +411,22 @@ names(sort(abs(outs[[x]]),decreasing=F)[1:5])
 #to do: select top five highest and lowest 
 ```
 
-
 ## d) Naive Bayes (Chelsea?)
 
-Write a function to perform Naive Bayes classification to predict missing author indicators
+*Write a function to perform Naive Bayes classification to predict missing author indicators*
 
-Make sure to use Laplace smoothing
+*Make sure to use Laplace smoothing*
 
-Use discretion on whether to discard stopwords or other rare/frequent words
+*Use discretion on whether to discard stopwords or other rare/frequent words*
 
-Compare results to naiveBayes()
+*Compare results to naiveBayes()*
 
-What are your classifications?
+*What are your classifications?*
 
 ## Matrix of Classifications (in progress)
 
 ```{r}
-classMat <- rbind(stop.prediction, nonstop.prediction)
+classMat <- rbind(stop.prediction, nonstop.prediction, fightingW.prediction)
 classMat <- as.data.frame(classMat)
 colnames(classMat) <- disputedpapers_ids
 classMat
@@ -411,7 +435,7 @@ classMat
 ## Matrix of Results (in progress)
 
 ```{r}
-resultsMat <- rbind(stop_results, nonstop_results)
+resultsMat <- rbind(stop_results, nonstop_results, fightingW_results)
 colnames(resultsMat) <- c("overall accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
 resultsMat <- as.data.frame(resultsMat)
 resultsMat <- round(resultsMat, 2)

@@ -359,13 +359,21 @@ dictionW=function(x,y){
 <pre class="r"><code># trim values to test
 cutoffValues &lt;- c(0.1, 0.2, 0.3, 0.5)
 
-ttp &lt;- function(cutoff){
-  
+ttp &lt;- function(cutoff, method){
   # produce a predictor score in training set
-  w.train=dictionW(x=x.train,y=y.train)
+
+  # for 1a, 1b
+  if(method==&quot;normal&quot;){
+    w.train &lt;- dictionW(x=x.train,y=y.train)
+  }
   
-  # test different cutoffs for trimming
-  w.train[which(abs(w.train)&lt;cutoff)]=0
+  # for dirch weights in 1c
+  if(method==&quot;dirch&quot;){
+    w.train &lt;- FightinW(x=x.train,y=y.train)
+  }
+  
+  # test different cutoffs for trimming (TODO: IS THIS OK?)
+  w.train &lt;- w.train[which(abs(w.train)&lt;cutoff)]
   
   z.train=x.train
   
@@ -407,14 +415,14 @@ ttp &lt;- function(cutoff){
   return(predictions)
 }
 
-testTrim &lt;- function() {
+testTrim &lt;- function(method) {
   # empty dataframe to store predictions
   cutoffPredictions &lt;- data.frame(matrix(ncol = 3, nrow = length(cutoffValues)))
   names(cutoffPredictions) &lt;- c(&quot;cutoff&quot;, &quot;test.prediction&quot;, &quot;pred.prediction&quot;)
  
   # try different cutoffs
    for(i in 1:length(cutoffValues)){
-    thisPrediction &lt;- ttp(cutoffValues[[i]])
+    thisPrediction &lt;- ttp(cutoffValues[[i]], method)
     # note have to convert data type from vector to string to store in data frame
     cutoffPredictions[i, ] &lt;- c(cutoffValues[[i]], paste(thisPrediction[[1]], collapse=&quot; &quot;), paste(thisPrediction[[2]], collapse=&quot; &quot;))
    }
@@ -423,7 +431,7 @@ testTrim &lt;- function() {
   cutoffPredictions &lt;&lt;- cutoffPredictions
 }
 
-testTrim()</code></pre>
+testTrim(&quot;normal&quot;)</code></pre>
 <p>The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship</p>
 <p>To determine which set of predictions are the best, we assess the performance of the model by calculating accuracy, precision, and recall for the predicted values in the testing set versus the actual values. We create the function apr() to do so through this report based on true positives, true negatives, false positives, and false negatives. We run the function apr() on all of the cutoff values by using the function runapr() and store results in the resultsDf variable.</p>
 <pre class="r"><code># function to calculate accuracy, precision, recall
@@ -513,7 +521,7 @@ stop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 <p><em>What is your classification?</em></p>
 <p>Fortunately, we benefit from all of the functions created in 1a and can accomplish all of this in only 3 lines of code! We repeat the same techniques as in 1a, but use the document term matrix that does not include stopwords: non.dtm.</p>
 <pre class="r"><code>splitSets(stop.dtm)
-testTrim()
+testTrim(&quot;normal&quot;)
 runapr()
 
 print(resultsDf)</code></pre>
@@ -527,75 +535,108 @@ print(resultsDf)</code></pre>
 nonstop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 </div>
 <div id="c-quasi-bayesian-fightin-words-numi" class="section level2">
-<h2>c) quasi-Bayesian Fightin’ Words (Numi)</h2>
-<p>Use discretion over whether to include or discard stopwords or rare/frequent words</p>
-<p>Produce Hamilton-discrimination score</p>
-<p>What is your classification?</p>
-<p>Which 5 words are scored the most, and which five are the least Hamiltonian? TO DO: someone please check i think this is wrong -essentially he said in OH that we should use the DictionW function and substitute in the correct dirichlet instead of averages</p>
-<pre class="r"><code>#a: only non-stop words  
-y &lt;- knownpapers$classes
-x &lt;- non.dtm
+<h2>c) quasi-Bayesian Fightin’ Words (Numi?)</h2>
+<p>TO DO: someone please check i think this is wrong -essentially he said in OH that we should use the DictionW function and substitute in the correct dirichlet instead of averages</p>
+<p><em>Use discretion over whether to include or discard stopwords or rare/frequent words</em></p>
+<p>We will only be using the non-stopwords in the analysis that follows.</p>
+<p><em>Produce Hamilton-discrimination score (TODO: what are these?)</em></p>
+<pre class="r"><code># fighting words weight function 
 
-#b: fighting words function 
 FightinW=function(x,y){
-  outs=list()
-    sum.1=colSums(x[which(y==1),])
+    # from FightinW in class5
+  sum.1=colSums(x[which(y==1),])
     sum.0=colSums(x[which(y==0),])
-    outs[[1]]=sum.1-sum.0 
 
+    # from FightinW in class5
   rate.1=sum.1/sum(sum.1)
   rate.0=sum.0/sum(sum.0)
-  outs[[2]]=rate.1-rate.0
   
+  # from dictionW() code
     var.1=rate.1*(1-rate.1)
     var.0=rate.0*(1-rate.0)
     
-  #dirichlet weights
+  #dirichlet weights (flattish weights)
   a.1=sum.1+1
   a.0=sum.0+1
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0)) 
 
+  # from dictionW() code
     w=(dirch.1-dirch.0)/(var.1+var.0)
-    return(w) }
+    return(w)
+}</code></pre>
+<p><em>What is your classification? (DONE?)</em></p>
+<pre class="r"><code># same steps as before, changing weighting method to &quot;dirch&quot;
+splitSets(non.dtm)
+testTrim(&quot;dirch&quot;)
+runapr()</code></pre>
+<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+## shorter object length</code></pre>
+<pre class="r"><code>print(resultsDf)</code></pre>
+<pre><code>##   accuracy precision_madison precision_hamilton recall_madison recall_hamilton
+## 1     0.57                 1               0.47           0.31               1
+## 2     0.57                 1               0.47           0.31               1
+## 3     0.57                 1               0.47           0.31               1
+## 4     0.57                 1               0.47           0.31               1</code></pre>
+<p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.</p>
+<pre class="r"><code>fightingW.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
+fightingW_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
+<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian? (TODO: what is going on here?)</em></p>
+<pre class="r"><code>#Word frequency 
+names(sort(abs(outs[[x]]),decreasing=T)[1:5])
+names(sort(abs(outs[[x]]),decreasing=F)[1:5])
 
-w.train=FightinW(x=x.train,y=y.train)
-top.non=sort(abs(w.train),decreasing=F)[1:5]
-bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 
 #to do: select top five highest and lowest </code></pre>
 </div>
 <div id="d-naive-bayes-chelsea" class="section level2">
 <h2>d) Naive Bayes (Chelsea?)</h2>
-<p>Write a function to perform Naive Bayes classification to predict missing author indicators</p>
-<p>Make sure to use Laplace smoothing</p>
-<p>Use discretion on whether to discard stopwords or other rare/frequent words</p>
-<p>Compare results to naiveBayes()</p>
-<p>What are your classifications?</p>
+<p><em>Write a function to perform Naive Bayes classification to predict missing author indicators</em></p>
+<p><em>Make sure to use Laplace smoothing</em></p>
+<p><em>Use discretion on whether to discard stopwords or other rare/frequent words</em></p>
+<p><em>Compare results to naiveBayes()</em></p>
+<p><em>What are your classifications?</em></p>
 </div>
 <div id="matrix-of-classifications-in-progress" class="section level2">
 <h2>Matrix of Classifications (in progress)</h2>
-<pre class="r"><code>classMat &lt;- rbind(stop.prediction, nonstop.prediction)
+<pre class="r"><code>classMat &lt;- rbind(stop.prediction, nonstop.prediction, fightingW.prediction)
 classMat &lt;- as.data.frame(classMat)
 colnames(classMat) &lt;- disputedpapers_ids
 classMat</code></pre>
-<pre><code>##                    18 19 20 49 50 51 52 53 54 55 56 57 58 62 63
-## stop.prediction     1  1  0  0  0  0  0  1  1  1  0  1  1  1  1
-## nonstop.prediction  1  1  0  0  0  0  0  1  1  0  0  1  1  1  1</code></pre>
+<pre><code>##                      18 19 20 49 50 51 52 53 54 55 56 57 58 62 63
+## stop.prediction       1  1  0  0  0  0  0  1  1  1  0  1  1  1  1
+## nonstop.prediction    1  1  0  0  0  0  0  1  1  0  0  1  1  1  1
+## fightingW.prediction  1  1  0  0  0  0  0  1  0  1  0  1  1  1  1</code></pre>
 </div>
 <div id="matrix-of-results-in-progress" class="section level2">
 <h2>Matrix of Results (in progress)</h2>
-<pre class="r"><code>resultsMat &lt;- rbind(stop_results, nonstop_results)
+<pre class="r"><code>resultsMat &lt;- rbind(stop_results, nonstop_results, fightingW_results)
 colnames(resultsMat) &lt;- c(&quot;overall accuracy&quot;, &quot;precision_madison&quot;, &quot;precision_hamilton&quot;, &quot;recall_madison&quot;, &quot;recall_hamilton&quot;)
 resultsMat &lt;- as.data.frame(resultsMat)
 resultsMat &lt;- round(resultsMat, 2)
 resultsMat</code></pre>
-<pre><code>##                 overall accuracy precision_madison precision_hamilton
-## stop_results                0.38                 1               0.24
-## nonstop_results             0.25                 1               0.14
-##                 recall_madison recall_hamilton
-## stop_results              0.24               1
-## nonstop_results           0.14               1</code></pre>
+<pre><code>##                   overall accuracy precision_madison precision_hamilton
+## stop_results                  0.38                 1               0.24
+## nonstop_results               0.25                 1               0.14
+## fightingW_results             0.57                 1               0.47
+##                   recall_madison recall_hamilton
+## stop_results                0.24               1
+## nonstop_results             0.14               1
+## fightingW_results           0.31               1</code></pre>
 </div>
 </div>
 
