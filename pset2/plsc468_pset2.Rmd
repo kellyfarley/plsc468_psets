@@ -183,7 +183,7 @@ ttp <- function(cutoff, method){
   
   # for dirch weights in 1c
   if(method=="dirch"){
-    w.train <- FightinW(x=x.train,y=y.train)
+    w.train <- fightinW(x=x.train,y=y.train)
   }
   
   # test different cutoffs for trimming (TODO: IS THIS OK?)
@@ -350,16 +350,16 @@ nonstop_results <- as.numeric(resultsDf[1, ])
 
 We will only be using the non-stopwords in the analysis that follows.
 
-*Produce Hamilton-discrimination score* (TODO: what are these?)
 
 ```{r}
 # fighting words weight function 
-splitSets(stop.dtm)
+splitSets(non.dtm)
 
-FightinW=function(x,y){
+fightinW=function(x,y){
 	# from FightinW in class5
   sum.1=colSums(x[which(y==1),])
 	sum.0=colSums(x[which(y==0),])
+  #outs[[1]]=sum.1-sum.0 
 
 	# from FightinW in class5
   rate.1=sum.1/sum(sum.1)
@@ -374,9 +374,18 @@ FightinW=function(x,y){
   a.0=sum.0+1
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0)) 
-
+  
+  #odds of word use
+  odds.1=rate.1/(1-rate.1)
+  odds.0=rate.0/(1-rate.0)
+ # outs[[3]]=log(odds.1)-log(odds.0)
+ # outs[[3]][which(rate.1==0 | rate.0==0)]=NA
+  #plot(outs[[1]], outs[[3]]) 
+  
   # from dictionW() code
 	w=(dirch.1-dirch.0)/(var.1+var.0)
+	#n =log(odds.1)-log(odds.0)
+#	n[.log= ][which(rate.1==0 | rate.0==0)]=NA
 	return(w)
 }
 ```
@@ -391,22 +400,40 @@ runapr()
 print(resultsDf)
 ```
 
-Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
+Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exactly the same from any other cutoff.
 
 ```{r}
 fightingW.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
 fightingW_results <- as.numeric(resultsDf[1, ])
 ```
 
-*Which 5 words are scored the most, and which five are the least Hamiltonian?* (TODO: what is going on here?)
+*Which 5 words are scored the most, and which five are the least Hamiltonian?* 
+(TODO: what is going on here?)
 
 ```{r eval=F}
 #Word frequency 
-names(sort(abs(outs[[x]]),decreasing=T)[1:5])
+
+w.train
+
+w.train=fightinW(x=x.train,y=y.train)
+top.stop=sort(abs(w.train),decreasing=T)[1:20]
+
+fightingW_results[[4]] =dirch.1-dirch.0
+names(sort(abs(FightinW[1]),decreasing=T)[1:5])
 names(sort(abs(outs[[x]]),decreasing=F)[1:5])
 
+```
 
-#to do: select top five highest and lowest 
+*Produce Hamilton-discrimination score* (TODO: what are these?)
+```{r eval=F}
+
+z=non.dtm
+#from class 5 
+for(j in 1:length(w)){
+	z[,j]=w[j]*x[,j]
+}
+p.score=rowSums(z)
+p.pred=as.numeric(p.score>mean(p.score))
 ```
 
 ## d) Naive Bayes (Chelsea?)
