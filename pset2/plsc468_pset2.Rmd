@@ -330,7 +330,7 @@ stop_results <- as.numeric(resultsDf[1, ])
 Fortunately, we benefit from all of the functions created in 1a and can accomplish all of this in only 3 lines of code! We repeat the same techniques as in 1a, but use the document term matrix that does not include stopwords: non.dtm.
 
 ```{r}
-splitSets(stop.dtm)
+splitSets(non.dtm)
 testTrim("normal")
 runapr()
 
@@ -354,6 +354,7 @@ We will only be using the non-stopwords in the analysis that follows.
 
 ```{r}
 # fighting words weight function 
+splitSets(stop.dtm)
 
 FightinW=function(x,y){
 	# from FightinW in class5
