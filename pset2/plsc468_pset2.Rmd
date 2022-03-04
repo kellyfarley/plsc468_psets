@@ -387,6 +387,7 @@ fightinW=function(x,y){
   
   # from dictionW() code
 	w=(dirch.1-dirch.0)
+	outs[[4]]=dirch.1-dirch.0
 #	n =log(odds.1)-log(odds.0)
 #	n[.log= ][which(rate.1==0 | rate.0==0)]=NA
 	return(w)
