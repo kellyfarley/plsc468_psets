@@ -423,8 +423,20 @@ bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
 ```{r eval=F}
-#from class 5 
+#class code sos 
+ from dictionW() code
+	w=(dirch.1-dirch.0)
+	outs[[4]]=dirch.1-dirch.0
+	
+# can always reproduce a party score with this
+w=outs[[4]]
 
+z=x
+for(j in 1:length(w)){
+	z[,j]=w[j]*x[,j]
+}
+p.score=rowSums(z)
+p.pred=as.numeric(p.score>mean(p.score))
 ```
 
 ## d) Naive Bayes (Chelsea?)
