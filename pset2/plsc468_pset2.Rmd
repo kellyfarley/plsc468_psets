@@ -418,7 +418,7 @@ fightingW_results <- as.numeric(resultsDf[1, ])
 #Word frequency 
 w.train=fightinW(x=x.train,y=y.train)
 top.non=sort(abs(w.train),decreasing=F)[1:5]
-top.non=sort(abs(w.train),decreasing=T)[1:5]
+bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 ```
 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
