@@ -378,8 +378,8 @@ fightinW=function(x,y){
   outs[[3]][which(rate.1==0 | rate.0==0)]=NA 
  
   #dirichlet weights (flattish weights)
-  a.1=sum.1+1
-  a.0=sum.0+1
+  a.1=sum.1+2
+  a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
 	cor.test(dirch.1,rate.1)
@@ -423,7 +423,7 @@ bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
 ```{r eval=F}
-#class code sos 
+#class code sos i 
  from dictionW() code
 	w=(dirch.1-dirch.0)
 	outs[[4]]=dirch.1-dirch.0
