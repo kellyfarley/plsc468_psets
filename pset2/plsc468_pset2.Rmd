@@ -348,7 +348,7 @@ nonstop_results <- as.numeric(resultsDf[1, ])
 
 *Use discretion over whether to include or discard stopwords or rare/frequent words*
 
-We will only be using the non-stopwords in the analysis that follows.
+We will only be using the non-stopwords in the analysis that follows. Our 
 
 
 ```{r}
@@ -388,6 +388,7 @@ fightinW=function(x,y){
 ```
 
 *What is your classification?*
+We report classifications for each method at the bottom of this document for easy comparison. 
 
 ```{r}
 # same steps as before, changing weighting method to "dirch"
@@ -408,10 +409,10 @@ fightingW_results <- as.numeric(resultsDf[1, ])
 We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. 
 ```{r eval=F}
 w.train=fightinW(x=x.train,y=y.train)
-top=names(sort(abs(w.train),decreasing=F)[1:5])
-bottom=names(sort(abs(w.train),decreasing=T)[1:5])
+most_h=names(sort(abs(w.train),decreasing=T)[1:5])
+least_h=names(sort(abs(w.train),decreasing=F)[1:5])
 
-words <- data.frame(top,bottom) 
+words <- data.frame(most_h,least_h) 
 ```
 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
