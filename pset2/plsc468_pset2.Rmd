@@ -414,19 +414,16 @@ bottom=names(sort(abs(w.train),decreasing=T)[1:5])
 words <- data.frame(top,bottom) 
 ```
 
-The following 5 words are scored the most:
-```{r}
-print(top.non)
-```
-
-The following 5 words are the least Hamiltonian?
-```{r}
-print(bottom.non)
-```
- 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
 ```{r eval=F}
 #class code sos i 
+#go through the scores that come out of the rates 
+#rates with log odds and then dirichlet fix 
+#take the PjH score then do the log odds part which gives scoring 
+#logO where its rate of hamilton/1-rate of ham 
+#including laplass 
+#last line logOham - logOmad 
+
  from dictionW() code
 	w=(dirch.1-dirch.0)
 	outs[[4]]=dirch.1-dirch.0
