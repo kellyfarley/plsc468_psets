@@ -402,6 +402,8 @@ words <- data.frame(top,bottom)
 *Produce Hamilton-discrimination score* (TO FIX)
 
 ```{r eval=F}
+splitSets(non.dtm)
+
 hamiltonW=function(x,y){
   outs=list()
   sum.1=colSums(x[which(y==1),]) #hamilton
@@ -432,6 +434,7 @@ hamiltonW=function(x,y){
 
   return(sj)
 }
+hamiltonW(x.train, y.train)
 
 ```
 
