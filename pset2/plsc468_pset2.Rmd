@@ -263,7 +263,7 @@ apr <- function(cutoff, test.prediction){
   true_hamilton <- sum(add.vector==2)
   true_madison <- sum(add.vector==0)
   
-  sub.vector <- y.train - test.prediction
+  sub.vector <- test.prediction - y.train
   # +1 indicates classified as H when M, -1 indicates classified as M when H
   
   false_hamilton <- sum(add.vector==1)
@@ -405,15 +405,23 @@ fightingW_results <- as.numeric(resultsDf[1, ])
 ```
 
 *Which 5 words are scored the most, and which five are the least Hamiltonian?* 
-(TODO: what is going on here?)
 
-```{r eval=F}
+```{r}
 #numi qs: am i using right data + do i need to filter to only y=1?
 w.train=fightinW(x=x.train,y=y.train)
 top.non=sort(abs(w.train),decreasing=F)[1:5]
 bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 ```
 
+The following 5 words are scored the most:
+```{r}
+print(top.non)
+```
+
+The following 5 words are the least Hamiltonian?
+```{r}
+print(bottom.non)
+```
  
 *Produce Hamilton-discrimination score* (TODO: what are these?)
 ```{r eval=F}
@@ -433,7 +441,7 @@ p.score=rowSums(z)
 p.pred=as.numeric(p.score>mean(p.score))
 ```
 
-## d) Naive Bayes (Chelsea?)
+## d) Naive Bayes (Chelsea)
 
 *Use discretion on whether to discard stopwords or other rare/frequent words*
 
@@ -441,9 +449,9 @@ We will only be using the non-stopwords in the analysis that follows.
 
 *Write a function to perform Naive Bayes classification to predict missing author indicators*
 
-*Make sure to use Laplace smoothing* (TODO)
+*Make sure to use Laplace smoothing*
 
-```{r, eval = F}
+```{r}
 splitSets(non.dtm) # to get test, train, predict global variables
 
 # use naive bayes, laplace smoothing class6 code to write function
@@ -509,12 +517,10 @@ pred1[which(pred1=='Hamilton')]=1
 pred2[which(pred2=='Madison')]=0
 pred2[which(pred2=='Hamilton')]=1
 
-#good classification : esp total counts
 table(pred1,y.train)
-
-#good classification w/ unique counts
 table(pred2,y.train)
 
+#bayes.prediction <- as.numeric(pred1)
 ```
 
 ```{r}
@@ -534,25 +540,57 @@ table(test1,y.test)
 #good classification w/ unique counts
 table(test2,y.test)
 ```
+Again the same classification results whether likelihood PrT or PrU is used, we arbitrarily choose to use test1 to calculate precision, accuracy, and recall.
 
+```{r}
+apr_general <- function(test.predict, test.real){
+  
+  add.vector <- test.predict + test.real
+  # 2's indicate truly H, 0's indicate truly M
+  
+  true_hamilton <- sum(add.vector==2)
+  true_madison <- sum(add.vector==0)
+  
+  sub.vector <- test.real - test.predict
+  # +1 indicates classified as H when M, -1 indicates classified as M when H
+  
+  false_hamilton <- sum(add.vector==1)
+  false_madison <- sum(add.vector==-1)
+  
+  # overall accuracy
+  accuracy <- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
+  
+  # precision for madison
+  precision_madison <- true_madison / (true_madison + false_madison)
+  
+  # precision for hamilton
+  precision_hamilton <- true_hamilton / (true_hamilton + false_hamilton)
+  
+  # recall for madison
+  recall_madison <- true_madison / (true_madison + false_hamilton)
+  
+  # recall for hamilton
+  recall_hamilton <- true_hamilton / (true_hamilton + false_madison)
+  
+  # compiled results
+  results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
+  return(results)
+}
 
-*What are your classifications?* (UPDATE NEEDED)
-
-```{r, eval=F}
-# previous steps (probably need to change)
-testTrim("normal")
-runapr()
-print(resultsDf)
+bayes_results <- apr_general(as.numeric(test1), y.test)
 ```
 
-*Compare results to naiveBayes()* (FROM CLASS 6 CODE)
+*Compare results to naiveBayes()*
 
-```{r, eval = F}
+```{r}
 # econ package for naivebayes implementation
 outs=naiveBayes(y=y.train,x=x.train,laplace=1)
 test.pred=predict(outs,x.test)
 1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)
 table(test.pred,y.test)
+
+#naivebayes.prediction <- test.pred
+#naivebayes_results <- apr_general(as.numeric(test1), y.test)
 ```
 
 ## Matrix of Classifications (in progress)
@@ -567,7 +605,7 @@ classMat
 ## Matrix of Results (in progress)
 
 ```{r}
-resultsMat <- rbind(stop_results, nonstop_results, fightingW_results)
+resultsMat <- rbind(stop_results, nonstop_results, fightingW_results, bayes_results)
 colnames(resultsMat) <- c("overall accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
 resultsMat <- as.data.frame(resultsMat)
 resultsMat <- round(resultsMat, 2)
