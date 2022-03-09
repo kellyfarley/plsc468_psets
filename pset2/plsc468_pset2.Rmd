@@ -50,7 +50,7 @@ Loading papers from .rda file:
 load(file = "pset2/federalists.Rdata")
 ```
 
-## a) Mosteller and Wallace stopword dictionary approach (Kelly, done)
+## a) Mosteller and Wallace stopword dictionary approach
 
 *Calculate word weights only using stopwords in known Federalist papers*
 
@@ -167,11 +167,11 @@ dictionW=function(x,y){
 
 The function ttp() carries out the training and predicts to which class the papers belong. To account for different trimming values, the function accepts different cutoffs as an input.
 
-With the function testTrim(), we try cutoffs of 0.1, 0.2, 0.3, and 0.5 to try to attain the best model. The resulting testing and predicting results are stored in the global variable cutoffPredictions.
+With the function testTrim(), we try sample cutoffs between 0 and 14: 0.5, 1, 5, and 10 to try to attain the best model. The resulting testing and predicting results are stored in the global variable cutoffPredictions.
 
 ```{r}
 # trim values to test
-cutoffValues <- c(0.1, 0.2, 0.3, 0.5)
+cutoffValues <- c(0.5, 1, 5, 10)
 
 ttp <- function(cutoff, method){
   # produce a predictor score in training set
@@ -310,14 +310,14 @@ runapr()
 print(resultsDf)
 ```
 
-At different cutoff values, we note that the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
+At different cutoff values, we note that the model gives the best accuracy with the third cutoff (5). We choose the results from this cutoff of 5 to compile into the comparative matrices at the end of this report.
 
 ```{r}
-stop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
-stop_results <- as.numeric(resultsDf[1, ])
+stop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[3], " ")[[1]])
+stop_results <- as.numeric(resultsDf[3, ])
 ```
 
-## b) Non-stopwords (Kelly, done)
+## b) Non-stopwords
 
 *Replicate part a) using non-stopwords*
 
@@ -337,19 +337,18 @@ runapr()
 print(resultsDf)
 ```
 
-Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
+We note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
 
 ```{r}
 nonstop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
 nonstop_results <- as.numeric(resultsDf[1, ])
 ```
 
-## c) quasi-Bayesian Fightin' Words (Numi)
+## c) quasi-Bayesian Fightin' Words
 
 *Use discretion over whether to include or discard stopwords or rare/frequent words*
 
 We will only be using the non-stopwords in the analysis that follows.
-
 
 ```{r}
 # fighting words weight function 
@@ -406,7 +405,7 @@ fightingW_results <- as.numeric(resultsDf[1, ])
 
 *Which 5 words are scored the most, and which five are the least Hamiltonian?* 
 We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. 
-```{r eval=F}
+```{r}
 w.train=fightinW(x=x.train,y=y.train)
 top=names(sort(abs(w.train),decreasing=F)[1:5])
 bottom=names(sort(abs(w.train),decreasing=T)[1:5])
@@ -416,15 +415,16 @@ words <- data.frame(top,bottom)
 
 The following 5 words are scored the most:
 ```{r}
-print(top.non)
+print(top)
 ```
 
 The following 5 words are the least Hamiltonian?
 ```{r}
-print(bottom.non)
+print(bottom)
 ```
  
-*Produce Hamilton-discrimination score* (TODO: what are these?)
+*Produce Hamilton-discrimination score* (TO FIX)
+
 ```{r eval=F}
 #class code sos i 
  from dictionW() code
@@ -442,7 +442,7 @@ p.score=rowSums(z)
 p.pred=as.numeric(p.score>mean(p.score))
 ```
 
-## d) Naive Bayes (Chelsea)
+## d) Naive Bayes
 
 *Use discretion on whether to discard stopwords or other rare/frequent words*
 
@@ -509,20 +509,9 @@ nbPredict=function(x,prior,likelihood,classes){
 	return(classes[apply(Lk,1,whichMax)])
 }
 
-pred1=nbPredict(x=x.train,prior=prC,likelihood=PrT,classes=classes)
-pred2=nbPredict(x=x.train,prior=prC,likelihood=PrU,classes=classes)
-
-pred1[which(pred1=='Madison')]=0
-pred1[which(pred1=='Hamilton')]=1
-
-pred2[which(pred2=='Madison')]=0
-pred2[which(pred2=='Hamilton')]=1
-
-table(pred1,y.train)
-table(pred2,y.train)
-
-#bayes.prediction <- as.numeric(pred1)
 ```
+
+First, we validate with the testing set and calculate accuracy, precision, and recall.
 
 ```{r}
 # try in the testing set
@@ -535,15 +524,8 @@ test1[which(test1=='Hamilton')]=1
 test2[which(test2=='Madison')]=0
 test2[which(test2=='Hamilton')]=1
 
-#good classification : esp total counts
-table(test1,y.test)
+# function to calculate accuracy, precision, recall
 
-#good classification w/ unique counts
-table(test2,y.test)
-```
-Again the same classification results whether likelihood PrT or PrU is used, we arbitrarily choose to use test1 to calculate precision, accuracy, and recall.
-
-```{r}
 apr_general <- function(test.predict, test.real){
   
   add.vector <- test.predict + test.real
@@ -577,38 +559,71 @@ apr_general <- function(test.predict, test.real){
   results <- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
   return(results)
 }
+  
+# run apr on each of the tests
+test1results <- apr_general(as.numeric(test1), y.test)
+test2results <- apr_general(as.numeric(test2), y.test)
+resultsDf <- as.data.frame(rbind(test1results, test2results))
+colnames(resultsDf) <- c("accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
+resultsDf <<- round(resultsDf, 2)
 
-bayes_results <- apr_general(as.numeric(test1), y.test)
+bayesPrT_results <- apr_general(as.numeric(test1), y.test)
+bayesPrU_results <- apr_general(as.numeric(test2), y.test)
+```
+
+We note the same classification, resulting in the same accuracy, precision, and recall, regardless of whether PrT or PrU likelihoods are used.
+
+Now, we predict.
+
+```{r}
+pred1=nbPredict(x=x.pred,prior=prC,likelihood=PrT,classes=classes)
+pred2=nbPredict(x=x.pred,prior=prC,likelihood=PrU,classes=classes)
+
+pred1[which(pred1=='Madison')]=0
+pred1[which(pred1=='Hamilton')]=1
+
+pred2[which(pred2=='Madison')]=0
+pred2[which(pred2=='Hamilton')]=1
+
+bayesPrT.prediction <- as.numeric(pred1)
+bayesPrU.prediction <- as.numeric(pred2)
 ```
 
 *Compare results to naiveBayes()*
 
 ```{r}
 # econ package for naivebayes implementation
-outs=naiveBayes(y=y.train,x=x.train,laplace=1)
-test.pred=predict(outs,x.test)
-1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)
-table(test.pred,y.test)
 
-#naivebayes.prediction <- test.pred
-#naivebayes_results <- apr_general(as.numeric(test1), y.test)
+outs=naiveBayes(y=y.train,x=x.train,laplace=1) # train
+
+test.pred=predict(outs,x.test) # test
+naivebayes_results <- apr_general(as.numeric(levels(test.pred))[test.pred], y.test) # validate
+
+unknown.pred=predict(outs,x.pred) # predict
+naivebayes.prediction <- as.numeric(levels(unknown.pred))[unknown.pred]
 ```
 
-## Matrix of Classifications (in progress)
+Interestingly, naiveBayes() classifies all papers as Madison (0), which is the opposite one would expect based on the prior, which is primarily Hamilton papers.
+
+## Matrix of Classifications
 
 ```{r}
-classMat <- rbind(stop.prediction, nonstop.prediction, fightingW.prediction)
+classMat <- rbind(stop.prediction, nonstop.prediction, fightingW.prediction, bayesPrT.prediction, bayesPrU.prediction, naivebayes.prediction)
 classMat <- as.data.frame(classMat)
 colnames(classMat) <- disputedpapers_ids
 classMat
 ```
 
-## Matrix of Results (in progress)
+From the above, we note that there is not a single paper for which all the models agree on the classification - interesting! When the naive Bayes model is excluded, we note agreement for papers 53, 54, 55, 57, 58, 62, 63 - all Hamilton papers. There is disagreement on the remaining 8 papers between models, with the Bayesian model, as expected, rating more of these papers as Hamilton due to the skewed prior distribution.
+
+## Matrix of Results
 
 ```{r}
-resultsMat <- rbind(stop_results, nonstop_results, fightingW_results, bayes_results)
+resultsMat <- rbind(stop_results, nonstop_results, fightingW_results, bayesPrT_results, bayesPrU_results, naivebayes_results)
 colnames(resultsMat) <- c("overall accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
 resultsMat <- as.data.frame(resultsMat)
 resultsMat <- round(resultsMat, 2)
 resultsMat
 ```
+
+Note that the NaN values come from division by 0, which happens in the case that there were no papers with the designation used in the denominator for the calculations. The Bayes models, regardless of likelihood used, have the highest accuracy, followed by stop words, then fighting words, then non-stop words, then the naive Bayes function. This is interesting - the impact of the prior in this particular circumstance is so significant that the Bayes models do well. It is interesting that the stop words model performs so much better than the non-stop words model: the little words can matter a lot!
