@@ -354,39 +354,25 @@ We will only be using the non-stopwords in the analysis that follows.
 # fighting words weight function 
 splitSets(non.dtm)
 
+
 fightinW=function(x,y){
   outs=list()
-	# from FightinW in class5
   sum.1=colSums(x[which(y==1),])
 	sum.0=colSums(x[which(y==0),])
 
-	# from FightinW in class5
-  rate.1=sum.1/sum(sum.1)
-  rate.0=sum.0/sum(sum.0)
-
-  # from dictionW() code
-	var.1=rate.1*(1-rate.1)
-	var.0=rate.0*(1-rate.0)
-	
-  #odds of word use
-  odds.1=rate.1/(1-rate.1)
-  odds.0=rate.0/(1-rate.0)
-  outs[[3]]=log(odds.1)-log(odds.0)
-  outs[[3]][which(rate.1==0 | rate.0==0)]=NA 
- 
-  #dirichlet weights (flattish weights)
+  #dirch weights 
   a.1=sum.1+2
   a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
 
-  # from dictionW() code
 	w=(dirch.1-dirch.0)
 	return(w)
 }
 ```
 
 *What is your classification?*
+Our classificatons are reported in a comparative matrix, below. 
 
 ```{r}
 # same steps as before, changing weighting method to "dirch"
@@ -413,33 +399,40 @@ bottom=names(sort(abs(w.train),decreasing=T)[1:5])
 words <- data.frame(top,bottom) 
 ```
 
-The following 5 words are scored the most:
-```{r}
-print(top)
-```
-
-The following 5 words are the least Hamiltonian?
-```{r}
-print(bottom)
-```
- 
 *Produce Hamilton-discrimination score* (TO FIX)
 
 ```{r eval=F}
-#class code sos i 
- from dictionW() code
-	w=(dirch.1-dirch.0)
-	outs[[4]]=dirch.1-dirch.0
+hamiltonW=function(x,y){
+  outs=list()
+  sum.1=colSums(x[which(y==1),]) #hamilton
+	sum.0=colSums(x[which(y==0),]) #madison
 	
-# can always reproduce a party score with this
-w=outs[[4]]
+	#dirchlet weights 
+  a.1=sum.1+2
+  a.0=sum.0+2
+  dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
+  dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
+  
 
-z=x
-for(j in 1:length(w)){
-	z[,j]=w[j]*x[,j]
+	# from FightinW in class5
+  #rate.1=sum.1/sum(sum.1) #hamilton rate
+ # rate.0=sum.0/sum(sum.0) #madison
+  
+  #adding in dirch weights 
+  rate.1=dirch.1/sum(dirch.1) #hamilton rate
+  rate.0=dirch.0/sum(dirch.0) 
+  
+    
+  #odds of word use
+  odds.1=rate.1/(1-rate.1) #odds of word in hamilton
+  odds.0=rate.0/(1-rate.0) #odds of word in madison
+  sj=log(odds.1)-log(odds.0) #sj
+  #sj[which(rate.1==0 | rate.0==0)]=NA  #not sure what this is 
+   
+
+  return(sj)
 }
-p.score=rowSums(z)
-p.pred=as.numeric(p.score>mean(p.score))
+
 ```
 
 ## d) Naive Bayes
