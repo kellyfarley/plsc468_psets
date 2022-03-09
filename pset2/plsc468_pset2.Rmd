@@ -447,7 +447,94 @@ We will only be using the non-stopwords in the analysis that follows.
 splitSets(non.dtm) # to get test, train, predict global variables
 
 # use naive bayes, laplace smoothing class6 code to write function
+
+# prior probability pr(C=Cj)
+prC=table(y.train)/length(y.train)
+
+# conditional probabilities
+# operate at # of unique occurrances or total occurances
+#  - total occurances, w/ laplace smoother
+Tj=rbind(
+	colSums(x.train[which(y.train==-1),]),
+    colSums(x.train[which(y.train==1),])
+)
+
+#  - unique occurances, w/ laplace smoother
+Uj=rbind(
+	colSums(x.train[which(y.train==-1),]>0),
+	colSums(x.train[which(y.train==1),]>0)
+)
+
+M=ncol(Tj)
+St=rowSums(Tj)
+Su=rowSums(Uj)
+
+PrT=Tj
+PrT[1,]=(1+Tj[1,])/(M+St[1])
+PrT[2,]=(1+Tj[2,])/(M+St[2])
+
+PrU=Tj
+PrU[1,]=(1+Uj[1,])/(M+Su[1])
+PrU[2,]=(1+Uj[2,])/(M+Su[2])
+
+# ordered classes
+classes=c('Madison','Hamilton')
+
+# document probability in train, test set
+nbPredict=function(x,prior,likelihood,classes){
+	whichMax=function(Lk){
+		return(which(Lk==max(Lk)))
+	}
+	kclass=length(prior)
+	if(kclass!=nrow(likelihood)){
+		break('prior and liklihood have inconsistent number of classes')
+	}
+	cat(paste('###################\npredicting ',kclass,' classes\n###################',sep=''))
+	Lk=matrix(NA,nrow(x),kclass)
+	for(j in 1:nrow(x)){
+		for(ks in 1:kclass){
+ 			Lk[j,ks]=log(prior[ks])+sum(log(x[j,which(x[j,]>0)]*likelihood[ks,which(x[j,]>0)]))
+		}
+	}
+	#return(list('classes'=classes[apply(Lk,1,whichMax)],'loglik'=Lk))
+	return(classes[apply(Lk,1,whichMax)])
+}
+
+pred1=nbPredict(x=x.train,prior=prC,likelihood=PrT,classes=classes)
+pred2=nbPredict(x=x.train,prior=prC,likelihood=PrU,classes=classes)
+
+pred1[which(pred1=='Madison')]=0
+pred1[which(pred1=='Hamilton')]=1
+
+pred2[which(pred2=='Madison')]=0
+pred2[which(pred2=='Hamilton')]=1
+
+#good classification : esp total counts
+table(pred1,y.train)
+
+#good classification w/ unique counts
+table(pred2,y.train)
+
 ```
+
+```{r}
+# try in the testing set
+test1=nbPredict(x=x.test,prior=prC,likelihood=PrT,classes=classes)
+test2=nbPredict(x=x.test,prior=prC,likelihood=PrU,classes=classes)
+
+test1[which(test1=='Hamilton')]=0
+test1[which(test1=='Madison')]=1
+
+test2[which(test2=='Madison')]=0
+test2[which(test2=='Hamilton')]=1
+
+#good classification : esp total counts
+table(test1,y.test)
+
+#good classification w/ unique counts
+table(test2,y.test)
+```
+
 
 *What are your classifications?* (UPDATE NEEDED)
 
