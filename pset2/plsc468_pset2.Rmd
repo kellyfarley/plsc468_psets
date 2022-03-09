@@ -473,7 +473,7 @@ PrT=Tj
 PrT[1,]=(1+Tj[1,])/(M+St[1])
 PrT[2,]=(1+Tj[2,])/(M+St[2])
 
-PrU=Tj
+PrU=Uj
 PrU[1,]=(1+Uj[1,])/(M+Su[1])
 PrU[2,]=(1+Uj[2,])/(M+Su[2])
 
