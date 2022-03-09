@@ -522,8 +522,8 @@ table(pred2,y.train)
 test1=nbPredict(x=x.test,prior=prC,likelihood=PrT,classes=classes)
 test2=nbPredict(x=x.test,prior=prC,likelihood=PrU,classes=classes)
 
-test1[which(test1=='Hamilton')]=0
-test1[which(test1=='Madison')]=1
+test1[which(test1=='Madison')]=0
+test1[which(test1=='Hamilton')]=1
 
 test2[which(test2=='Madison')]=0
 test2[which(test2=='Hamilton')]=1
