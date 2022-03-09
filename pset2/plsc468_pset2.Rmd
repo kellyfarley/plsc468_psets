@@ -455,13 +455,13 @@ prC=table(y.train)/length(y.train)
 # operate at # of unique occurrances or total occurances
 #  - total occurances, w/ laplace smoother
 Tj=rbind(
-	colSums(x.train[which(y.train==-1),]),
+	colSums(x.train[which(y.train==-0),]),
     colSums(x.train[which(y.train==1),])
 )
 
 #  - unique occurances, w/ laplace smoother
 Uj=rbind(
-	colSums(x.train[which(y.train==-1),]>0),
+	colSums(x.train[which(y.train==-0),]>0),
 	colSums(x.train[which(y.train==1),]>0)
 )
 
