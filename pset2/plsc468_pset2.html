@@ -369,7 +369,7 @@ ttp &lt;- function(cutoff, method){
   
   # for dirch weights in 1c
   if(method==&quot;dirch&quot;){
-    w.train &lt;- FightinW(x=x.train,y=y.train)
+    w.train &lt;- fightinW(x=x.train,y=y.train)
   }
   
   # test different cutoffs for trimming (TODO: IS THIS OK?)
@@ -444,7 +444,7 @@ apr &lt;- function(cutoff, test.prediction){
   true_hamilton &lt;- sum(add.vector==2)
   true_madison &lt;- sum(add.vector==0)
   
-  sub.vector &lt;- y.train - test.prediction
+  sub.vector &lt;- test.prediction - y.train
   # +1 indicates classified as H when M, -1 indicates classified as M when H
   
   false_hamilton &lt;- sum(add.vector==1)
@@ -489,19 +489,19 @@ runapr &lt;- function(){
 runapr()</code></pre>
 <pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
 <pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
 <pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
 <pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
+<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
 ## shorter object length</code></pre>
 <pre class="r"><code>print(resultsDf)</code></pre>
 <pre><code>##   accuracy precision_madison precision_hamilton recall_madison recall_hamilton
@@ -520,7 +520,7 @@ stop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 <p><em>Consider appropriate document-scores threshold to classify documents and trim word weights appropriately</em></p>
 <p><em>What is your classification?</em></p>
 <p>Fortunately, we benefit from all of the functions created in 1a and can accomplish all of this in only 3 lines of code! We repeat the same techniques as in 1a, but use the document term matrix that does not include stopwords: non.dtm.</p>
-<pre class="r"><code>splitSets(stop.dtm)
+<pre class="r"><code>splitSets(non.dtm)
 testTrim(&quot;normal&quot;)
 runapr()
 
@@ -535,13 +535,14 @@ print(resultsDf)</code></pre>
 nonstop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 </div>
 <div id="c-quasi-bayesian-fightin-words-numi" class="section level2">
-<h2>c) quasi-Bayesian Fightin’ Words (Numi?)</h2>
+<h2>c) quasi-Bayesian Fightin’ Words (Numi)</h2>
 <p><em>Use discretion over whether to include or discard stopwords or rare/frequent words</em></p>
 <p>We will only be using the non-stopwords in the analysis that follows.</p>
-<p><em>Produce Hamilton-discrimination score</em> (TODO: what are these?)</p>
 <pre class="r"><code># fighting words weight function 
+splitSets(non.dtm)
 
-FightinW=function(x,y){
+fightinW=function(x,y){
+  outs=list()
     # from FightinW in class5
   sum.1=colSums(x[which(y==1),])
     sum.0=colSums(x[which(y==0),])
@@ -549,19 +550,25 @@ FightinW=function(x,y){
     # from FightinW in class5
   rate.1=sum.1/sum(sum.1)
   rate.0=sum.0/sum(sum.0)
-  
+
   # from dictionW() code
     var.1=rate.1*(1-rate.1)
     var.0=rate.0*(1-rate.0)
     
+  #odds of word use
+  odds.1=rate.1/(1-rate.1)
+  odds.0=rate.0/(1-rate.0)
+  outs[[3]]=log(odds.1)-log(odds.0)
+  outs[[3]][which(rate.1==0 | rate.0==0)]=NA 
+ 
   #dirichlet weights (flattish weights)
-  a.1=sum.1+1
-  a.0=sum.0+1
+  a.1=sum.1+2
+  a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
-  dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0)) 
+  dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
 
   # from dictionW() code
-    w=(dirch.1-dirch.0)/(var.1+var.0)
+    w=(dirch.1-dirch.0)
     return(w)
 }</code></pre>
 <p><em>What is your classification?</em></p>
@@ -591,37 +598,199 @@ runapr()</code></pre>
 ## 2     0.57                 1               0.47           0.31               1
 ## 3     0.57                 1               0.47           0.31               1
 ## 4     0.57                 1               0.47           0.31               1</code></pre>
-<p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.</p>
+<p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exactly the same from any other cutoff.</p>
 <pre class="r"><code>fightingW.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
 fightingW_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
-<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian?</em> (TODO: what is going on here?)</p>
-<pre class="r"><code>#Word frequency 
-names(sort(abs(outs[[x]]),decreasing=T)[1:5])
-names(sort(abs(outs[[x]]),decreasing=F)[1:5])
+<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian?</em></p>
+<pre class="r"><code>#numi qs: am i using right data + do i need to filter to only y=1?
+w.train=fightinW(x=x.train,y=y.train)
+top.non=sort(abs(w.train),decreasing=F)[1:5]
+bottom.non=sort(abs(w.train),decreasing=T)[1:5]</code></pre>
+<p>The following 5 words are scored the most:</p>
+<pre class="r"><code>print(top.non)</code></pre>
+<pre><code>##     abolish   aggregate  applicable      betray      change 
+## 2.58561e-06 2.58561e-06 2.58561e-06 2.58561e-06 2.58561e-06</code></pre>
+<p>The following 5 words are the least Hamiltonian?</p>
+<pre class="r"><code>print(bottom.non)</code></pre>
+<pre><code>##        upon        will    national       state       power 
+## 0.004755488 0.004250814 0.002635414 0.002471121 0.002289861</code></pre>
+<p><em>Produce Hamilton-discrimination score</em> (TODO: what are these?)</p>
+<pre class="r"><code>#class code sos i 
+ from dictionW() code
+    w=(dirch.1-dirch.0)
+    outs[[4]]=dirch.1-dirch.0
+    
+# can always reproduce a party score with this
+w=outs[[4]]
 
-
-#to do: select top five highest and lowest </code></pre>
+z=x
+for(j in 1:length(w)){
+    z[,j]=w[j]*x[,j]
+}
+p.score=rowSums(z)
+p.pred=as.numeric(p.score&gt;mean(p.score))</code></pre>
 </div>
 <div id="d-naive-bayes-chelsea" class="section level2">
-<h2>d) Naive Bayes (Chelsea?)</h2>
+<h2>d) Naive Bayes (Chelsea)</h2>
 <p><em>Use discretion on whether to discard stopwords or other rare/frequent words</em></p>
 <p>We will only be using the non-stopwords in the analysis that follows.</p>
 <p><em>Write a function to perform Naive Bayes classification to predict missing author indicators</em></p>
-<p><em>Make sure to use Laplace smoothing</em> (TODO)</p>
+<p><em>Make sure to use Laplace smoothing</em></p>
 <pre class="r"><code>splitSets(non.dtm) # to get test, train, predict global variables
 
-# use naive bayes, laplace smoothing class6 code to write function</code></pre>
-<p><em>What are your classifications?</em> (UPDATE NEEDED)</p>
-<pre class="r"><code># previous steps (probably need to change)
-testTrim(&quot;normal&quot;)
-runapr()
-print(resultsDf)</code></pre>
-<p><em>Compare results to naiveBayes()</em> (FROM CLASS 6 CODE)</p>
+# use naive bayes, laplace smoothing class6 code to write function
+
+# prior probability pr(C=Cj)
+prC=table(y.train)/length(y.train)
+
+# conditional probabilities
+# operate at # of unique occurrances or total occurances
+#  - total occurances, w/ laplace smoother
+Tj=rbind(
+    colSums(x.train[which(y.train==-0),]),
+    colSums(x.train[which(y.train==1),])
+)
+
+#  - unique occurances, w/ laplace smoother
+Uj=rbind(
+    colSums(x.train[which(y.train==-0),]&gt;0),
+    colSums(x.train[which(y.train==1),]&gt;0)
+)
+
+M=ncol(Tj)
+St=rowSums(Tj)
+Su=rowSums(Uj)
+
+PrT=Tj
+PrT[1,]=(1+Tj[1,])/(M+St[1])
+PrT[2,]=(1+Tj[2,])/(M+St[2])
+
+PrU=Uj
+PrU[1,]=(1+Uj[1,])/(M+Su[1])
+PrU[2,]=(1+Uj[2,])/(M+Su[2])
+
+# ordered classes
+classes=c(&#39;Madison&#39;,&#39;Hamilton&#39;)
+
+# document probability in train, test set
+nbPredict=function(x,prior,likelihood,classes){
+    whichMax=function(Lk){
+        return(which(Lk==max(Lk)))
+    }
+    kclass=length(prior)
+    if(kclass!=nrow(likelihood)){
+        break(&#39;prior and liklihood have inconsistent number of classes&#39;)
+    }
+    cat(paste(&#39;###################\npredicting &#39;,kclass,&#39; classes\n###################&#39;,sep=&#39;&#39;))
+    Lk=matrix(NA,nrow(x),kclass)
+    for(j in 1:nrow(x)){
+        for(ks in 1:kclass){
+            Lk[j,ks]=log(prior[ks])+sum(log(x[j,which(x[j,]&gt;0)]*likelihood[ks,which(x[j,]&gt;0)]))
+        }
+    }
+    #return(list(&#39;classes&#39;=classes[apply(Lk,1,whichMax)],&#39;loglik&#39;=Lk))
+    return(classes[apply(Lk,1,whichMax)])
+}
+
+pred1=nbPredict(x=x.train,prior=prC,likelihood=PrT,classes=classes)</code></pre>
+<pre><code>## ###################
+## predicting 2 classes
+## ###################</code></pre>
+<pre class="r"><code>pred2=nbPredict(x=x.train,prior=prC,likelihood=PrU,classes=classes)</code></pre>
+<pre><code>## ###################
+## predicting 2 classes
+## ###################</code></pre>
+<pre class="r"><code>pred1[which(pred1==&#39;Madison&#39;)]=0
+pred1[which(pred1==&#39;Hamilton&#39;)]=1
+
+pred2[which(pred2==&#39;Madison&#39;)]=0
+pred2[which(pred2==&#39;Hamilton&#39;)]=1
+
+table(pred1,y.train)</code></pre>
+<pre><code>##      y.train
+## pred1  0  1
+##     0  4  0
+##     1  0 15</code></pre>
+<pre class="r"><code>table(pred2,y.train)</code></pre>
+<pre><code>##      y.train
+## pred2  0  1
+##     0  4  0
+##     1  0 15</code></pre>
+<pre class="r"><code>#bayes.prediction &lt;- as.numeric(pred1)</code></pre>
+<pre class="r"><code># try in the testing set
+test1=nbPredict(x=x.test,prior=prC,likelihood=PrT,classes=classes)</code></pre>
+<pre><code>## ###################
+## predicting 2 classes
+## ###################</code></pre>
+<pre class="r"><code>test2=nbPredict(x=x.test,prior=prC,likelihood=PrU,classes=classes)</code></pre>
+<pre><code>## ###################
+## predicting 2 classes
+## ###################</code></pre>
+<pre class="r"><code>test1[which(test1==&#39;Madison&#39;)]=0
+test1[which(test1==&#39;Hamilton&#39;)]=1
+
+test2[which(test2==&#39;Madison&#39;)]=0
+test2[which(test2==&#39;Hamilton&#39;)]=1
+
+#good classification : esp total counts
+table(test1,y.test)</code></pre>
+<pre><code>##      y.test
+## test1  0  1
+##     1  4 13</code></pre>
+<pre class="r"><code>#good classification w/ unique counts
+table(test2,y.test)</code></pre>
+<pre><code>##      y.test
+## test2  0  1
+##     1  4 13</code></pre>
+<p>Again the same classification results whether likelihood PrT or PrU is used, we arbitrarily choose to use test1 to calculate precision, accuracy, and recall.</p>
+<pre class="r"><code>apr_general &lt;- function(test.predict, test.real){
+  
+  add.vector &lt;- test.predict + test.real
+  # 2&#39;s indicate truly H, 0&#39;s indicate truly M
+  
+  true_hamilton &lt;- sum(add.vector==2)
+  true_madison &lt;- sum(add.vector==0)
+  
+  sub.vector &lt;- test.real - test.predict
+  # +1 indicates classified as H when M, -1 indicates classified as M when H
+  
+  false_hamilton &lt;- sum(add.vector==1)
+  false_madison &lt;- sum(add.vector==-1)
+  
+  # overall accuracy
+  accuracy &lt;- (true_hamilton + true_madison) / (true_hamilton + true_madison + false_hamilton + false_madison)
+  
+  # precision for madison
+  precision_madison &lt;- true_madison / (true_madison + false_madison)
+  
+  # precision for hamilton
+  precision_hamilton &lt;- true_hamilton / (true_hamilton + false_hamilton)
+  
+  # recall for madison
+  recall_madison &lt;- true_madison / (true_madison + false_hamilton)
+  
+  # recall for hamilton
+  recall_hamilton &lt;- true_hamilton / (true_hamilton + false_madison)
+  
+  # compiled results
+  results &lt;- c(accuracy, precision_madison, precision_hamilton, recall_madison, recall_hamilton)
+  return(results)
+}
+
+bayes_results &lt;- apr_general(as.numeric(test1), y.test)</code></pre>
+<p><em>Compare results to naiveBayes()</em></p>
 <pre class="r"><code># econ package for naivebayes implementation
 outs=naiveBayes(y=y.train,x=x.train,laplace=1)
 test.pred=predict(outs,x.test)
-1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)
-table(test.pred,y.test)</code></pre>
+1-mean(abs(as.numeric(as.character(test.pred))-y.test)/2)</code></pre>
+<pre><code>## [1] 0.6176471</code></pre>
+<pre class="r"><code>table(test.pred,y.test)</code></pre>
+<pre><code>##          y.test
+## test.pred  0  1
+##         0  4 13
+##         1  0  0</code></pre>
+<pre class="r"><code>#naivebayes.prediction &lt;- test.pred
+#naivebayes_results &lt;- apr_general(as.numeric(test1), y.test)</code></pre>
 </div>
 <div id="matrix-of-classifications-in-progress" class="section level2">
 <h2>Matrix of Classifications (in progress)</h2>
@@ -636,7 +805,7 @@ classMat</code></pre>
 </div>
 <div id="matrix-of-results-in-progress" class="section level2">
 <h2>Matrix of Results (in progress)</h2>
-<pre class="r"><code>resultsMat &lt;- rbind(stop_results, nonstop_results, fightingW_results)
+<pre class="r"><code>resultsMat &lt;- rbind(stop_results, nonstop_results, fightingW_results, bayes_results)
 colnames(resultsMat) &lt;- c(&quot;overall accuracy&quot;, &quot;precision_madison&quot;, &quot;precision_hamilton&quot;, &quot;recall_madison&quot;, &quot;recall_hamilton&quot;)
 resultsMat &lt;- as.data.frame(resultsMat)
 resultsMat &lt;- round(resultsMat, 2)
@@ -645,10 +814,12 @@ resultsMat</code></pre>
 ## stop_results                  0.38                 1               0.24
 ## nonstop_results               0.25                 1               0.14
 ## fightingW_results             0.57                 1               0.47
+## bayes_results                 0.76               NaN               0.76
 ##                   recall_madison recall_hamilton
 ## stop_results                0.24               1
 ## nonstop_results             0.14               1
-## fightingW_results           0.31               1</code></pre>
+## fightingW_results           0.31               1
+## bayes_results               0.00               1</code></pre>
 </div>
 </div>
 
