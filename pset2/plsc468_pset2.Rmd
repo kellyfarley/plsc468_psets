@@ -344,7 +344,7 @@ nonstop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], 
 nonstop_results <- as.numeric(resultsDf[1, ])
 ```
 
-## c) quasi-Bayesian Fightin' Words (Numi?)
+## c) quasi-Bayesian Fightin' Words (Numi)
 
 *Use discretion over whether to include or discard stopwords or rare/frequent words*
 
@@ -360,13 +360,11 @@ fightinW=function(x,y){
 	# from FightinW in class5
   sum.1=colSums(x[which(y==1),])
 	sum.0=colSums(x[which(y==0),])
-  outs[[1]]=sum.1-sum.0 
 
 	# from FightinW in class5
   rate.1=sum.1/sum(sum.1)
   rate.0=sum.0/sum(sum.0)
-  outs[[2]]=rate.1-rate.0
-  
+
   # from dictionW() code
 	var.1=rate.1*(1-rate.1)
 	var.0=rate.0*(1-rate.0)
@@ -382,14 +380,9 @@ fightinW=function(x,y){
   a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
-	cor.test(dirch.1,rate.1)
-	cor.test(dirch.0,rate.0)
-  
+
   # from dictionW() code
 	w=(dirch.1-dirch.0)
-	outs[[4]]=dirch.1-dirch.0
-#	n =log(odds.1)-log(odds.0)
-#	n[.log= ][which(rate.1==0 | rate.0==0)]=NA
 	return(w)
 }
 ```
@@ -421,6 +414,7 @@ top.non=sort(abs(w.train),decreasing=F)[1:5]
 bottom.non=sort(abs(w.train),decreasing=T)[1:5]
 ```
 
+ 
 *Produce Hamilton-discrimination score* (TODO: what are these?)
 ```{r eval=F}
 #class code sos i 
