@@ -409,14 +409,14 @@ hamiltonW=function(x,y){
   #rate.1=sum.1/sum(sum.1) #hamilton rate
   #rate.0=sum.0/sum(sum.0) #madison
   
-  #adding in dirch weights 
-  rate.1=dirch.1/sum(dirch.1) #hamilton rate
-  rate.0=dirch.0/sum(dirch.0) 
+  #adding in dirch weights REDUNDANT?
+ # rate.1=dirch.1/sum(dirch.1) #hamilton rate
+ # rate.0=dirch.0/sum(dirch.0) 
   
     
   #odds of word use
-  odds.1=rate.1/(1-rate.1) #odds of word in hamilton
-  odds.0=rate.0/(1-rate.0) #odds of word in madison
+  odds.1=dirch.1/(1-dirch.1) #odds of word in hamilton
+  odds.0=dirch.0/(1-dirch.0) #odds of word in madison
   sj=log(odds.1)-log(odds.0) #sj
 
   return(sj)
