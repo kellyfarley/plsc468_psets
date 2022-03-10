@@ -438,6 +438,7 @@ top.ham <- names(sort(abs(scores),decreasing=F)[1:5])
 bottom.ham <- names(sort(abs(scores),decreasing=T)[1:5])
 
 words <- data.frame(top.fw,bottom.fw, top.ham, bottom.ham) 
+words
 ```
 
 ## d) Naive Bayes
