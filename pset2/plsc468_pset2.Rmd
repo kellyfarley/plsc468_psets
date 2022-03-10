@@ -354,7 +354,6 @@ We will only be using the non-stopwords in the analysis that follows.
 # fighting words weight function 
 splitSets(non.dtm)
 
-
 fightinW=function(x,y){
   outs=list()
   sum.1=colSums(x[which(y==1),])
@@ -389,16 +388,6 @@ fightingW.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1]
 fightingW_results <- as.numeric(resultsDf[1, ])
 ```
 
-*Which 5 words are scored the most, and which five are the least Hamiltonian?* 
-We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. 
-```{r}
-w.train=fightinW(x=x.train,y=y.train)
-top=names(sort(abs(w.train),decreasing=F)[1:5])
-bottom=names(sort(abs(w.train),decreasing=T)[1:5])
-
-words <- data.frame(top,bottom) 
-```
-
 *Produce Hamilton-discrimination score* 
 Here, we produce a score (sj) for each word in the corpus by calculating the probability that a word appears in a given corpus. Our final parameter takes the difference in log odds between Hamilton and Madison. Additionally, we use dirch weights to smooth the distribution of words so that rare words are not eliminated. The Hamilton discrimination score for each word is stored in the variable scores. 
 
@@ -411,14 +400,14 @@ hamiltonW=function(x,y){
 	sum.0=colSums(x[which(y==0),]) #madison
 	
 	#dirchlet weights 
-  a.1=sum.1+2
+  a.1=sum.1+2 
   a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
   
 	# from FightinW in class5
   #rate.1=sum.1/sum(sum.1) #hamilton rate
- # rate.0=sum.0/sum(sum.0) #madison
+  #rate.0=sum.0/sum(sum.0) #madison
   
   #adding in dirch weights 
   rate.1=dirch.1/sum(dirch.1) #hamilton rate
@@ -434,6 +423,21 @@ hamiltonW=function(x,y){
 }
 
 scores <- hamiltonW(x.train, y.train)
+```
+*Which 5 words are scored the most, and which five are the least Hamiltonian?* 
+We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. We provide the most and least Hamiltonian words produced by the FightinWords (denoted as ".fw") and the Hamilton discrimination score (denoted by ".ham")
+```{r}
+#top five words using fightinW
+w.train=fightinW(x=x.train,y=y.train)
+top.fw <- names(sort(abs(w.train),decreasing=F)[1:5])
+bottom.fw <- names(sort(abs(w.train),decreasing=T)[1:5])
+
+
+#top five using hamilton disc score
+top.ham <- names(sort(abs(scores),decreasing=F)[1:5])
+bottom.ham <- names(sort(abs(scores),decreasing=T)[1:5])
+
+words <- data.frame(top.fw,bottom.fw, top.ham, bottom.ham) 
 ```
 
 ## d) Naive Bayes
