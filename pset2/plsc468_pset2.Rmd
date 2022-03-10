@@ -399,7 +399,8 @@ bottom=names(sort(abs(w.train),decreasing=T)[1:5])
 words <- data.frame(top,bottom) 
 ```
 
-*Produce Hamilton-discrimination score* (TO FIX)
+*Produce Hamilton-discrimination score* 
+Here, we produce a score (sj) for each word in the corpus by calculating the probability that a word appears in a given corpus. Our final parameter takes the difference in log odds between Hamilton and Madison. Additionally, we use dirch weights to smooth the distribution of words so that rare words are not eliminated. The Hamilton discrimination score for each word is stored in the variable scores. 
 
 ```{r eval=F}
 splitSets(non.dtm)
@@ -415,7 +416,6 @@ hamiltonW=function(x,y){
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
   
-
 	# from FightinW in class5
   #rate.1=sum.1/sum(sum.1) #hamilton rate
  # rate.0=sum.0/sum(sum.0) #madison
@@ -429,13 +429,11 @@ hamiltonW=function(x,y){
   odds.1=rate.1/(1-rate.1) #odds of word in hamilton
   odds.0=rate.0/(1-rate.0) #odds of word in madison
   sj=log(odds.1)-log(odds.0) #sj
-  #sj[which(rate.1==0 | rate.0==0)]=NA  #not sure what this is 
-   
 
   return(sj)
 }
-hamiltonW(x.train, y.train)
 
+scores <- hamiltonW(x.train, y.train)
 ```
 
 ## d) Naive Bayes
