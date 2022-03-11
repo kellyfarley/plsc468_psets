@@ -14,7 +14,7 @@ output:
 ```{r setup, include=FALSE}
 rm(list = ls()) # clear global environ
 
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warnings = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
 
 # set working directory (change for each user)
 wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
@@ -110,7 +110,7 @@ knownpapers <- knownpapers %>%
 
 ```
 
-Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator <<-.
+Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. Note that we used our discretion on this training/testing proportion and have decided to split the known papers exactly in half due to overfitting and validation tradeoffs. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator <<-.
 
 ```{r}
 # function to split into testing, training, prediction sets
@@ -165,9 +165,9 @@ dictionW=function(x,y){
 }
 ```
 
-The function ttp() carries out the training and predicts to which class the papers belong. To account for different trimming values, the function accepts different cutoffs as an input.
+The function ttp() carries out the training, testing, and prediction.
 
-With the function testTrim(), we try sample cutoffs between 0 and 14: 0.5, 1, 5, and 10 to try to attain the best model. The resulting testing and predicting results are stored in the global variable cutoffPredictions.
+To account for different trimming values, the function accepts different cutoffs as an input. With the function testTrim(), we try various classification cutoffs and examine the accuracy of the resulting classifications. Because the word weights W span between approximately 0 and 14, we choose to test 4 classification cutoffs in this range to try to attain the best model: 0.5, 1, 5, and 10.
 
 ```{r}
 # trim values to test
@@ -186,7 +186,7 @@ ttp <- function(cutoff, method){
     w.train <- fightinW(x=x.train,y=y.train)
   }
   
-  # test different cutoffs for trimming (TODO: IS THIS OK?)
+  # test different cutoffs for trimming
   w.train <- w.train[which(abs(w.train)<cutoff)]
   
   z.train=x.train
@@ -248,7 +248,7 @@ testTrim <- function(method) {
 testTrim("normal")
 ```
 
-The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship
+The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship.
 
 To determine which set of predictions are the best, we assess the performance of the model by calculating accuracy, precision, and recall for the predicted values in the testing set versus the actual values. We create the function apr() to do so through this report based on true positives, true negatives, false positives, and false negatives. We run the function apr() on all of the cutoff values by using the function runapr() and store results in the resultsDf variable.
 
@@ -310,11 +310,11 @@ runapr()
 print(resultsDf)
 ```
 
-At different cutoff values, we note that the model gives the best accuracy with the third cutoff (5). We choose the results from this cutoff of 5 to compile into the comparative matrices at the end of this report.
+Interestingly, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the first cutoff of 0.5 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other classification cutoff.
 
 ```{r}
-stop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[3], " ")[[1]])
-stop_results <- as.numeric(resultsDf[3, ])
+stop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
+stop_results <- as.numeric(resultsDf[1, ])
 ```
 
 ## b) Non-stopwords
@@ -337,7 +337,7 @@ runapr()
 print(resultsDf)
 ```
 
-We note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
+Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the first cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.
 
 ```{r}
 nonstop.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], " ")[[1]])
@@ -348,12 +348,14 @@ nonstop_results <- as.numeric(resultsDf[1, ])
 
 *Use discretion over whether to include or discard stopwords or rare/frequent words*
 
-We will only be using the non-stopwords in the analysis that follows.
+We will only be using the non-stopwords in the analysis that follows but will not be removing rare/frequent words to stay true to the heart of the text.
+
+*What is your classification?*
+
+First, we create a fightingW() function to weight words as according to Fightin' Words.
 
 ```{r}
 # fighting words weight function 
-splitSets(non.dtm)
-
 fightinW=function(x,y){
   outs=list()
   sum.1=colSums(x[which(y==1),])
@@ -370,8 +372,7 @@ fightinW=function(x,y){
 }
 ```
 
-*What is your classification?*
-Our classificatons are reported in a comparative matrix, below. 
+Next, we complete the same steps as in 1a and 1b, making sure to use the non-stopword document term matrix and c hanging our weighting method to the fightingW() method.
 
 ```{r}
 # same steps as before, changing weighting method to "dirch"
@@ -388,10 +389,11 @@ fightingW.prediction <- as.numeric(strsplit(cutoffPredictions$pred.prediction[1]
 fightingW_results <- as.numeric(resultsDf[1, ])
 ```
 
-*Produce Hamilton-discrimination score* 
+*Produce Hamilton-discrimination score*
+
 Here, we produce a score (sj) for each word in the corpus by calculating the probability that a word appears in a given corpus. Our final parameter takes the difference in log odds between Hamilton and Madison. Additionally, we use dirch weights to smooth the distribution of words so that rare words are not eliminated. The Hamilton discrimination score for each word is stored in the variable scores. 
 
-```{r eval=F}
+```{r}
 splitSets(non.dtm)
 
 hamiltonW=function(x,y){
@@ -419,8 +421,13 @@ hamiltonW=function(x,y){
 
 scores <- hamiltonW(x.train, y.train)
 ```
+
+The variable scores is not printed to conserve space in the knitted document.
+
 *Which 5 words are scored the most, and which five are the least Hamiltonian?* 
-We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. We provide the most and least Hamiltonian words produced by the FightinWords (denoted as ".fw") and the Hamilton discrimination score (denoted by ".ham")
+
+We sort the non-stop words by frequency to identify the top five most and least "Hamiltonian" words. Results are stored in the "words" data frame. We provide the most and least Hamiltonian words produced by the Fightin' Words (denoted as ".fw") and the Hamilton discrimination score (denoted by ".ham"),
+
 ```{r}
 #top five words using fightinW
 w.train=fightinW(x=x.train,y=y.train)
@@ -436,11 +443,13 @@ words <- data.frame(top.fw,bottom.fw, top.ham, bottom.ham)
 words
 ```
 
+It is interesting to note that the top words produced by  Fightin' Word and the Hamilton discrimination score are the same! However, the bottom words differ for the two methods. 
+
 ## d) Naive Bayes
 
 *Use discretion on whether to discard stopwords or other rare/frequent words*
 
-We will only be using the non-stopwords in the analysis that follows.
+As in 1c, we will only be using the non-stopwords in the analysis that follows.
 
 *Write a function to perform Naive Bayes classification to predict missing author indicators*
 
@@ -449,20 +458,20 @@ We will only be using the non-stopwords in the analysis that follows.
 ```{r}
 splitSets(non.dtm) # to get test, train, predict global variables
 
-# use naive bayes, laplace smoothing class6 code to write function
+# use naive bayes, laplace smoothing to write function
 
 # prior probability pr(C=Cj)
 prC=table(y.train)/length(y.train)
 
 # conditional probabilities
-# operate at # of unique occurrances or total occurances
-#  - total occurances, w/ laplace smoother
+# operate at # of unique occurrences or total occurences
+#  - total occuraeces, w/ laplace smoother
 Tj=rbind(
 	colSums(x.train[which(y.train==-0),]),
     colSums(x.train[which(y.train==1),])
 )
 
-#  - unique occurances, w/ laplace smoother
+#  - unique occurences, w/ laplace smoother
 Uj=rbind(
 	colSums(x.train[which(y.train==-0),]>0),
 	colSums(x.train[which(y.train==1),]>0)
@@ -561,6 +570,8 @@ resultsDf <- as.data.frame(rbind(test1results, test2results))
 colnames(resultsDf) <- c("accuracy", "precision_madison", "precision_hamilton", "recall_madison", "recall_hamilton")
 resultsDf <<- round(resultsDf, 2)
 
+print(resultsDf)
+
 bayesPrT_results <- apr_general(as.numeric(test1), y.test)
 bayesPrU_results <- apr_general(as.numeric(test2), y.test)
 ```
@@ -597,7 +608,7 @@ unknown.pred=predict(outs,x.pred) # predict
 naivebayes.prediction <- as.numeric(levels(unknown.pred))[unknown.pred]
 ```
 
-Interestingly, naiveBayes() classifies all papers as Madison (0), which is the opposite one would expect based on the prior, which is primarily Hamilton papers.
+Interestingly, naiveBayes() classifies all papers as Madison (0), which is the opposite one would expect based on the prior, which is primarily Hamilton papers. As discussed in class and in office hours, we are not quite sure why this is.
 
 ## Matrix of Classifications
 

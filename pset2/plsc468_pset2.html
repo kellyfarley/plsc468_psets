@@ -294,10 +294,8 @@ stop.dtm = dtm[,!non.stops] # stop words</code></pre>
 <p>Second, we break up the papers into known (knownpapers) and disputed (disputedpapers) papers. We also recode the classes into “hamilton” = 1 and “madison” = 0.</p>
 <pre class="r"><code># get row IDs for known and disputed papers
 papers &lt;- as.data.frame(papers)
-knownpapers_ids &lt;- which(papers$classes == c(&quot;hamilton&quot;, &quot;madison&quot;), arr.ind=TRUE)</code></pre>
-<pre><code>## Warning in papers$classes == c(&quot;hamilton&quot;, &quot;madison&quot;): longer object length is
-## not a multiple of shorter object length</code></pre>
-<pre class="r"><code>disputedpapers_ids &lt;- which(papers$classes == &quot;disputed&quot;, arr.ind=TRUE)
+knownpapers_ids &lt;- which(papers$classes == c(&quot;hamilton&quot;, &quot;madison&quot;), arr.ind=TRUE)
+disputedpapers_ids &lt;- which(papers$classes == &quot;disputed&quot;, arr.ind=TRUE)
 
 # split papers into known and disputed
 knownpapers &lt;- papers[knownpapers_ids,]
@@ -307,7 +305,7 @@ disputedpapers &lt;- papers[disputedpapers_ids,]
 knownpapers &lt;- knownpapers %&gt;%
   mutate(classes = case_when(classes==&quot;hamilton&quot; ~ 1,
                    classes==&quot;madison&quot; ~ 0))</code></pre>
-<p>Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator &lt;&lt;-.</p>
+<p>Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. Note that we used our discretion on this training/testing proportion and have decided to split the known papers exactly in half due to overfitting and validation tradeoffs. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator &lt;&lt;-.</p>
 <pre class="r"><code># function to split into testing, training, prediction sets
 splitSets &lt;- function(dtm){
   # split dtm into known and disputed
@@ -354,8 +352,8 @@ dictionW=function(x,y){
     w=(rate.1-rate.0)/(var.1+var.0)
     return(w)
 }</code></pre>
-<p>The function ttp() carries out the training and predicts to which class the papers belong. To account for different trimming values, the function accepts different cutoffs as an input.</p>
-<p>With the function testTrim(), we try sample cutoffs between 0 and 14: 0.5, 1, 5, and 10 to try to attain the best model. The resulting testing and predicting results are stored in the global variable cutoffPredictions.</p>
+<p>The function ttp() carries out the training, testing, and prediction.</p>
+<p>To account for different trimming values, the function accepts different cutoffs as an input. With the function testTrim(), we try various classification cutoffs and examine the accuracy of the resulting classifications. Because the word weights W span between approximately 0 and 14, we choose to test 4 classification cutoffs in this range to try to attain the best model: 0.5, 1, 5, and 10.</p>
 <pre class="r"><code># trim values to test
 cutoffValues &lt;- c(0.5, 1, 5, 10)
 
@@ -372,7 +370,7 @@ ttp &lt;- function(cutoff, method){
     w.train &lt;- fightinW(x=x.train,y=y.train)
   }
   
-  # test different cutoffs for trimming (TODO: IS THIS OK?)
+  # test different cutoffs for trimming
   w.train &lt;- w.train[which(abs(w.train)&lt;cutoff)]
   
   z.train=x.train
@@ -432,7 +430,7 @@ testTrim &lt;- function(method) {
 }
 
 testTrim(&quot;normal&quot;)</code></pre>
-<p>The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship</p>
+<p>The global variable cutoffPredictions stores our test.prediction and pred.prediction at various cutoff values, where 1 represents Hamilton authorship and 0 represents Madison authorship.</p>
 <p>To determine which set of predictions are the best, we assess the performance of the model by calculating accuracy, precision, and recall for the predicted values in the testing set versus the actual values. We create the function apr() to do so through this report based on true positives, true negatives, false positives, and false negatives. We run the function apr() on all of the cutoff values by using the function runapr() and store results in the resultsDf variable.</p>
 <pre class="r"><code># function to calculate accuracy, precision, recall
 
@@ -486,32 +484,17 @@ runapr &lt;- function(){
   resultsDf &lt;&lt;- round(resultsDf, 2)
 }
 
-runapr()</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction - y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre class="r"><code>print(resultsDf)</code></pre>
+runapr()
+
+print(resultsDf)</code></pre>
 <pre><code>##   accuracy precision_madison precision_hamilton recall_madison recall_hamilton
 ## 1     0.38                 1               0.24           0.24               1
 ## 2     0.38                 1               0.24           0.24               1
-## 3     0.38                 1               0.24           0.24               1
+## 3     0.43                 1               0.29           0.25               1
 ## 4     0.38                 1               0.24           0.24               1</code></pre>
-<p>At different cutoff values, we note that the model gives the best accuracy with the third cutoff (5). We choose the results from this cutoff of 5 to compile into the comparative matrices at the end of this report.</p>
-<pre class="r"><code>stop.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[3], &quot; &quot;)[[1]])
-stop_results &lt;- as.numeric(resultsDf[3, ])</code></pre>
+<p>Interestingly, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the first cutoff of 0.5 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other classification cutoff.</p>
+<pre class="r"><code>stop.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
+stop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 </div>
 <div id="b-non-stopwords" class="section level2">
 <h2>b) Non-stopwords</h2>
@@ -528,129 +511,120 @@ print(resultsDf)</code></pre>
 <pre><code>##   accuracy precision_madison precision_hamilton recall_madison recall_hamilton
 ## 1     0.25                 1               0.14           0.14               1
 ## 2     0.25                 1               0.14           0.14               1
-## 3     0.25                 1               0.14           0.14               1
-## 4     0.25                 1               0.14           0.14               1</code></pre>
-<p>We note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.</p>
+## 3     0.25                 1               0.10           0.18               1
+## 4     0.25                 1               0.10           0.18               1</code></pre>
+<p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the first cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exact same from any other cutoff.</p>
 <pre class="r"><code>nonstop.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
 nonstop_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
 </div>
 <div id="c-quasi-bayesian-fightin-words" class="section level2">
 <h2>c) quasi-Bayesian Fightin’ Words</h2>
 <p><em>Use discretion over whether to include or discard stopwords or rare/frequent words</em></p>
-<p>We will only be using the non-stopwords in the analysis that follows.</p>
+<p>We will only be using the non-stopwords in the analysis that follows but will not be removing rare/frequent words to stay true to the heart of the text.</p>
+<p><em>What is your classification?</em></p>
+<p>First, we create a fightingW() function to weight words as according to Fightin’ Words.</p>
 <pre class="r"><code># fighting words weight function 
-splitSets(non.dtm)
-
 fightinW=function(x,y){
   outs=list()
-    # from FightinW in class5
   sum.1=colSums(x[which(y==1),])
     sum.0=colSums(x[which(y==0),])
 
-    # from FightinW in class5
-  rate.1=sum.1/sum(sum.1)
-  rate.0=sum.0/sum(sum.0)
-
-  # from dictionW() code
-    var.1=rate.1*(1-rate.1)
-    var.0=rate.0*(1-rate.0)
-    
-  #odds of word use
-  odds.1=rate.1/(1-rate.1)
-  odds.0=rate.0/(1-rate.0)
-  outs[[3]]=log(odds.1)-log(odds.0)
-  outs[[3]][which(rate.1==0 | rate.0==0)]=NA 
- 
-  #dirichlet weights (flattish weights)
+  #dirch weights 
   a.1=sum.1+2
   a.0=sum.0+2
   dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
   dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
 
-  # from dictionW() code
     w=(dirch.1-dirch.0)
     return(w)
 }</code></pre>
-<p><em>What is your classification?</em></p>
+<p>Next, we complete the same steps as in 1a and 1b, making sure to use the non-stopword document term matrix and c hanging our weighting method to the fightingW() method.</p>
 <pre class="r"><code># same steps as before, changing weighting method to &quot;dirch&quot;
 splitSets(non.dtm)
 testTrim(&quot;dirch&quot;)
-runapr()</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in test.prediction + y.train: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre><code>## Warning in y.train - test.prediction: longer object length is not a multiple of
-## shorter object length</code></pre>
-<pre class="r"><code>print(resultsDf)</code></pre>
+runapr()
+print(resultsDf)</code></pre>
 <pre><code>##   accuracy precision_madison precision_hamilton recall_madison recall_hamilton
-## 1     0.57                 1               0.47           0.31               1
-## 2     0.57                 1               0.47           0.31               1
-## 3     0.57                 1               0.47           0.31               1
-## 4     0.57                 1               0.47           0.31               1</code></pre>
+## 1     0.33                 1               0.18           0.22               1
+## 2     0.33                 1               0.18           0.22               1
+## 3     0.33                 1               0.18           0.22               1
+## 4     0.33                 1               0.18           0.22               1</code></pre>
 <p>Again, we note, at different cutoff values, the model gives the exact same classification, resulting in the same accuracy, precision, and recall. It is therefore arbitrary which cutoff we choose. We arbitrarily choose the results from the cutoff of 0.1 to compile into the comparative matrices at the end of this report, noting that the results are the exactly the same from any other cutoff.</p>
 <pre class="r"><code>fightingW.prediction &lt;- as.numeric(strsplit(cutoffPredictions$pred.prediction[1], &quot; &quot;)[[1]])
 fightingW_results &lt;- as.numeric(resultsDf[1, ])</code></pre>
-<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian?</em> We sort the non-stop words by frequency to identify the top five most and least “Hamiltonian” words. Results are stored in the “words” data frame.</p>
-<pre class="r"><code>w.train=fightinW(x=x.train,y=y.train)
-top=names(sort(abs(w.train),decreasing=F)[1:5])
-bottom=names(sort(abs(w.train),decreasing=T)[1:5])
+<p><em>Produce Hamilton-discrimination score</em></p>
+<p>Here, we produce a score (sj) for each word in the corpus by calculating the probability that a word appears in a given corpus. Our final parameter takes the difference in log odds between Hamilton and Madison. Additionally, we use dirch weights to smooth the distribution of words so that rare words are not eliminated. The Hamilton discrimination score for each word is stored in the variable scores.</p>
+<pre class="r"><code>splitSets(non.dtm)
 
-words &lt;- data.frame(top,bottom) </code></pre>
-<p>The following 5 words are scored the most:</p>
-<pre class="r"><code>print(top)</code></pre>
-<pre><code>## [1] &quot;some&quot;  &quot;ours&quot;  &quot;while&quot; &quot;ill&quot;   &quot;after&quot;</code></pre>
-<p>The following 5 words are the least Hamiltonian?</p>
-<pre class="r"><code>print(bottom)</code></pre>
-<pre><code>## [1] &quot;and&quot;   &quot;would&quot; &quot;the&quot;   &quot;this&quot;  &quot;their&quot;</code></pre>
-<p><em>Produce Hamilton-discrimination score</em> (TO FIX)</p>
-<pre class="r"><code>#class code sos i 
- from dictionW() code
-    w=(dirch.1-dirch.0)
-    outs[[4]]=dirch.1-dirch.0
+hamiltonW=function(x,y){
+  outs=list()
+  sum.1=colSums(x[which(y==1),]) #hamilton
+    sum.0=colSums(x[which(y==0),]) #madison
     
-# can always reproduce a party score with this
-w=outs[[4]]
+    #dirchlet weights 
+  a.1=sum.1+2 #laplace [2]
+  a.0=sum.0+2 #laplace [2]
+  dirch.1=(sum.1+a.1)/(sum(sum.1)+sum(a.1))
+  dirch.0=(sum.0+a.0)/(sum(sum.0)+sum(a.0))
+  
+  #word rates 
+  rate.1 = dirch.1/sum(dirch.1)
+  rate.0=dirch.0/sum(dirch.0)
+    
+  #odds of word use
+  odds.1=rate.1/(1-rate.1) #odds of word in hamilton + dirch 
+  odds.0=rate.0/(1-rate.0) #odds of word in madison
+  sj=log(odds.1)-log(odds.0) #sj
 
-z=x
-for(j in 1:length(w)){
-    z[,j]=w[j]*x[,j]
+  return(sj)
 }
-p.score=rowSums(z)
-p.pred=as.numeric(p.score&gt;mean(p.score))</code></pre>
+
+scores &lt;- hamiltonW(x.train, y.train)</code></pre>
+<p>The variable scores is not printed to conserve space in the knitted document.</p>
+<p><em>Which 5 words are scored the most, and which five are the least Hamiltonian?</em></p>
+<p>We sort the non-stop words by frequency to identify the top five most and least “Hamiltonian” words. Results are stored in the “words” data frame. We provide the most and least Hamiltonian words produced by the Fightin’ Words (denoted as “.fw”) and the Hamilton discrimination score (denoted by “.ham”),</p>
+<pre class="r"><code>#top five words using fightinW
+w.train=fightinW(x=x.train,y=y.train)
+top.fw &lt;- names(sort(abs(w.train),decreasing=F)[1:5])
+bottom.fw &lt;- names(sort(abs(w.train),decreasing=T)[1:5])
+
+
+#top five using hamilton disc score
+top.ham &lt;- names(sort(abs(scores),decreasing=F)[1:5])
+bottom.ham &lt;- names(sort(abs(scores),decreasing=T)[1:5])
+
+words &lt;- data.frame(top.fw,bottom.fw, top.ham, bottom.ham) 
+words</code></pre>
+<pre><code>##    top.fw bottom.fw top.ham bottom.ham
+## 1   favor      upon   favor       jury
+## 2 appears      will appears       coin
+## 3     end      jury     end      court
+## 4     lay       may     lay       upon
+## 5   third     trial   third    supreme</code></pre>
+<p>It is interesting to note that the top words produced by Fightin’ Word and the Hamilton discrimination score are the same! However, the bottom words differ for the two methods.</p>
 </div>
 <div id="d-naive-bayes" class="section level2">
 <h2>d) Naive Bayes</h2>
 <p><em>Use discretion on whether to discard stopwords or other rare/frequent words</em></p>
-<p>We will only be using the non-stopwords in the analysis that follows.</p>
+<p>As in 1c, we will only be using the non-stopwords in the analysis that follows.</p>
 <p><em>Write a function to perform Naive Bayes classification to predict missing author indicators</em></p>
 <p><em>Make sure to use Laplace smoothing</em></p>
 <pre class="r"><code>splitSets(non.dtm) # to get test, train, predict global variables
 
-# use naive bayes, laplace smoothing class6 code to write function
+# use naive bayes, laplace smoothing to write function
 
 # prior probability pr(C=Cj)
 prC=table(y.train)/length(y.train)
 
 # conditional probabilities
-# operate at # of unique occurrances or total occurances
-#  - total occurances, w/ laplace smoother
+# operate at # of unique occurrences or total occurences
+#  - total occuraeces, w/ laplace smoother
 Tj=rbind(
     colSums(x.train[which(y.train==-0),]),
     colSums(x.train[which(y.train==1),])
 )
 
-#  - unique occurances, w/ laplace smoother
+#  - unique occurences, w/ laplace smoother
 Uj=rbind(
     colSums(x.train[which(y.train==-0),]&gt;0),
     colSums(x.train[which(y.train==1),]&gt;0)
@@ -749,7 +723,14 @@ resultsDf &lt;- as.data.frame(rbind(test1results, test2results))
 colnames(resultsDf) &lt;- c(&quot;accuracy&quot;, &quot;precision_madison&quot;, &quot;precision_hamilton&quot;, &quot;recall_madison&quot;, &quot;recall_hamilton&quot;)
 resultsDf &lt;&lt;- round(resultsDf, 2)
 
-bayesPrT_results &lt;- apr_general(as.numeric(test1), y.test)
+print(resultsDf)</code></pre>
+<pre><code>##              accuracy precision_madison precision_hamilton recall_madison
+## test1results     0.81               NaN               0.81              0
+## test2results     0.81               NaN               0.81              0
+##              recall_hamilton
+## test1results               1
+## test2results               1</code></pre>
+<pre class="r"><code>bayesPrT_results &lt;- apr_general(as.numeric(test1), y.test)
 bayesPrU_results &lt;- apr_general(as.numeric(test2), y.test)</code></pre>
 <p>We note the same classification, resulting in the same accuracy, precision, and recall, regardless of whether PrT or PrU likelihoods are used.</p>
 <p>Now, we predict.</p>
@@ -779,7 +760,7 @@ naivebayes_results &lt;- apr_general(as.numeric(levels(test.pred))[test.pred], y
 
 unknown.pred=predict(outs,x.pred) # predict
 naivebayes.prediction &lt;- as.numeric(levels(unknown.pred))[unknown.pred]</code></pre>
-<p>Interestingly, naiveBayes() classifies all papers as Madison (0), which is the opposite one would expect based on the prior, which is primarily Hamilton papers.</p>
+<p>Interestingly, naiveBayes() classifies all papers as Madison (0), which is the opposite one would expect based on the prior, which is primarily Hamilton papers. As discussed in class and in office hours, we are not quite sure why this is.</p>
 </div>
 <div id="matrix-of-classifications" class="section level2">
 <h2>Matrix of Classifications</h2>
@@ -788,11 +769,11 @@ classMat &lt;- as.data.frame(classMat)
 colnames(classMat) &lt;- disputedpapers_ids
 classMat</code></pre>
 <pre><code>##                       18 19 20 49 50 51 52 53 54 55 56 57 58 62 63
-## stop.prediction        0  0  0  0  0  0  0  1  1  1  0  1  1  1  1
-## nonstop.prediction     1  1  0  0  0  0  0  1  1  0  0  1  1  1  1
-## fightingW.prediction   1  1  0  0  0  0  0  1  0  1  0  1  1  1  1
-## bayesPrT.prediction    0  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-## bayesPrU.prediction    1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
+## stop.prediction        1  1  0  0  0  0  0  1  1  1  0  1  1  1  1
+## nonstop.prediction     1  0  0  0  0  0  0  1  1  1  0  1  1  1  1
+## fightingW.prediction   0  0  0  0  0  1  0  1  0  1  1  1  1  1  1
+## bayesPrT.prediction    0  0  0  1  1  1  1  1  1  1  1  1  1  1  1
+## bayesPrU.prediction    0  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 ## naivebayes.prediction  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0</code></pre>
 <p>From the above, we note that there is not a single paper for which all the models agree on the classification - interesting! When the naive Bayes model is excluded, we note agreement for papers 53, 54, 55, 57, 58, 62, 63 - all Hamilton papers. There is disagreement on the remaining 8 papers between models, with the Bayesian model, as expected, rating more of these papers as Hamilton due to the skewed prior distribution.</p>
 </div>
@@ -806,17 +787,17 @@ resultsMat</code></pre>
 <pre><code>##                    overall accuracy precision_madison precision_hamilton
 ## stop_results                   0.38                 1               0.24
 ## nonstop_results                0.25                 1               0.14
-## fightingW_results              0.57                 1               0.47
-## bayesPrT_results               0.76               NaN               0.76
-## bayesPrU_results               0.76               NaN               0.76
-## naivebayes_results             0.24                 1               0.00
+## fightingW_results              0.33                 1               0.18
+## bayesPrT_results               0.81               NaN               0.81
+## bayesPrU_results               0.81               NaN               0.81
+## naivebayes_results             0.19                 1               0.00
 ##                    recall_madison recall_hamilton
 ## stop_results                 0.24               1
 ## nonstop_results              0.14               1
-## fightingW_results            0.31               1
+## fightingW_results            0.22               1
 ## bayesPrT_results             0.00               1
 ## bayesPrU_results             0.00               1
-## naivebayes_results           0.24             NaN</code></pre>
+## naivebayes_results           0.19             NaN</code></pre>
 <p>Note that the NaN values come from division by 0, which happens in the case that there were no papers with the designation used in the denominator for the calculations. The Bayes models, regardless of likelihood used, have the highest accuracy, followed by stop words, then fighting words, then non-stop words, then the naive Bayes function. This is interesting - the impact of the prior in this particular circumstance is so significant that the Bayes models do well. It is interesting that the stop words model performs so much better than the non-stop words model: the little words can matter a lot!</p>
 </div>
 </div>
