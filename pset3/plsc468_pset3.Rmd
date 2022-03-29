@@ -1,0 +1,58 @@
+---
+title: "PLSC 468 Pset 3"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "4/8/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+library(tidyverse)
+```
+
+Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 2008
+
+# Part 1
+
+**Goal: Choose an appropriate value to set for the number of topics *K* that will be estimated for each model**
+
+*Our choice of K:*
+
+*Description of method:*
+
+*Defense of method:*
+
+*Preprocessing of ad strings into correct format for lda() and stm():*
+
+# Part 2
+
+**Goal: Setting k = K, estimate the following topic models. For each model, produce a list of the top 10 most frequent works across each of the k topics**
+
+## 2a: Unsupervised LDA model using lda::lda.collapsed.gibs.sampler(.., k)
+
+## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k)
+
+## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k)
+
+## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k)
+
+## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k)
+
+## Reflection
+
+**Are these roughly the same topics, or are there major differences in the topics being estimated?**
