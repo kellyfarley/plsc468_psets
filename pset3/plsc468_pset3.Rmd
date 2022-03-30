@@ -23,9 +23,13 @@ knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
 library(tidyverse)
+library(lda)
+library(stm)
 ```
 
 Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 2008
+
+Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
 
 # Part 1
 
@@ -38,6 +42,20 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 *Defense of method:*
 
 *Preprocessing of ad strings into correct format for lda() and stm():*
+
+We use the function textProcess() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words.
+
+```{r}
+load("pset3/adData.Rdata") # laod data
+
+processed <- textProcessor(ads$texts, metadata = ads) # clean data
+
+# stm pacakge requires storing docs, meta data, and vocab
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta) # eliminates very common and very rare terms
+docs <- out$documents
+vocab <- out$vocab
+meta <-out$meta
+```
 
 # Part 2
 
