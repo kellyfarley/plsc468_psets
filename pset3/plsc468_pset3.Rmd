@@ -29,8 +29,6 @@ library(stm)
 
 Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 2008
 
-Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
-
 # Part 1
 
 **Goal: Choose an appropriate value to set for the number of topics *K* that will be estimated for each model**
@@ -43,7 +41,21 @@ Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modelin
 
 *Preprocessing of ad strings into correct format for lda() and stm():*
 
-We use the function textProcess() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words.
+# Part 2
+
+**Goal: Setting k = K, estimate the following topic models. For each model, produce a list of the top 10 most frequent works across each of the k topics**
+
+## 2a: Unsupervised LDA model using lda::lda.collapsed.gibs.sampler(.., k) (Numi)
+
+## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k) (Numi)
+
+## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
+
+## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
+
+Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
+
+We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words.
 
 ```{r}
 load("pset3/adData.Rdata") # laod data
@@ -57,19 +69,7 @@ vocab <- out$vocab
 meta <-out$meta
 ```
 
-# Part 2
-
-**Goal: Setting k = K, estimate the following topic models. For each model, produce a list of the top 10 most frequent works across each of the k topics**
-
-## 2a: Unsupervised LDA model using lda::lda.collapsed.gibs.sampler(.., k)
-
-## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k)
-
-## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k)
-
-## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k)
-
-## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k)
+## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k) (Kelly)
 
 ## Reflection
 
