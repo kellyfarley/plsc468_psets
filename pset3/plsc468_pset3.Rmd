@@ -125,7 +125,8 @@ result[[1]]=lda.collapsed.gibbs.sampler(docs[[1]], 		## lexicalized word counts
 )
 
 ###################################################
-top.topic.words(result[[1]]$topics,10)
+lda_results <- top.topic.words(result[[1]]$topics,10)
+
 ```
 
 ## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k) (Numi)
@@ -193,7 +194,7 @@ result[[2]]=slda.em(documents=docs[[1]],
 		method="sLDA"
 )
 
-top.topic.words(result[[2]]$topics,10)
+slda_party_results <- top.topic.words(result[[2]]$topics,10)
 ```
 
 ## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
@@ -256,7 +257,7 @@ result[[2]]=slda.em(documents=docs[[1]],
 		method="sLDA"
 )
 
-top.topic.words(result[[2]]$topics,10)
+slda_tone_results <- top.topic.words(result[[2]]$topics,10)
 ```
 
 ## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
@@ -295,7 +296,7 @@ result[[3]] = stm(documents=outs$documents,vocab=outs$vocab,K=k,
 names(result[[3]])
 
 # (less than parsimonious) interface for collecting top 20 words =>
-t(labelTopics(model=result[[3]], topics = NULL, n = 20, frexweight = 0.5)[1]$prob)
+stm_results <- t(labelTopics(model=result[[3]], topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
 # 4. CTM in topicmodels
 # unlike above, operates directly on a 'DocumentTermMatrix' object produced in tm
@@ -318,5 +319,9 @@ r.topics = tidy(result[[4]], matrix = "beta")
 ## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k) (Kelly)
 
 ## Reflection
-
 **Are these roughly the same topics, or are there major differences in the topics being estimated?**
+We report the top ten words for each model specification in the results matrix. 
+```{r}
+result_matrix <- rbind(lda_results, slda_party_results, slda_tone_results, stm_results)
+```
+
