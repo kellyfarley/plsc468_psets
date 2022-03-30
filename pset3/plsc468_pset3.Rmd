@@ -31,6 +31,17 @@ library(topicmodels)
 library(lda)
 library(stm)
 ```
+Setting the seed for future randomization:
+
+```{r}
+set.seed(1005)
+```
+
+Loading papers from .rda file:
+
+```{r}
+load(file = "pset3/adData.Rdata")
+```
 
 Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 2008
 
@@ -114,17 +125,7 @@ result[[1]]=lda.collapsed.gibbs.sampler(docs[[1]], 		## lexicalized word counts
 )
 
 ###################################################
-# outputs
-
-names(result[[1]])
-# [1] "assignments"     "topics"          "topic_sums"      "document_sums"   NA
-# [6] NA                NA                NA                NA                "log.likelihoods"
-
-top.topic.words(result[[1]]$topics,20)
-result[[1]]$assignments
-
-result[[1]]$topic_sums
-result[[1]]$document_sums
+top.topic.words(result[[1]]$topics,10)
 ```
 
 ## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k) (Numi)
@@ -157,26 +158,106 @@ result[[2]]=slda.em(documents=docs[[1]],
 )
 
 ###################################################
-# outputs
+top.topic.words(result[[2]]$topics,10)
 
-names(result[[2]])
-#[1] "assignments"   "topics"        "topic_sums"    "document_sums"
-#[5] NA              NA              NA              NA
-#[9] NA              NA              "model"         "coefs"
+# 2. sLDA = inferring topics by predicting an outcome/annotation
+# pre-set some parameters
+set.seed(1005)
+#preset topics
+k = 10
+# starting values for prediction--> here they are -1 and 1 as long as they vary
+params = sample(c(-1, 1), k, replace=TRUE)
+#set alpha--> by default set at 1
+alpha = 1.0
+#t a
+eta = 0.1
 
-top.topic.words(result[[2]]$topics,20)
-result[[2]]$assignments
+# annotation to predict --> use party to constrian dist of topics 
+y=pty
 
-result[[2]]$topic_sums
-result[[2]]$document_sums
+#exp maximization
+result[[2]]=slda.em(documents=docs[[1]],
+		K=k,
+		vocab=vocab,
+		num.e.iterations=10,
+		#inc iterations --> more convergence
+		num.m.iterations=4,
+		alpha=alpha, 
+		eta=eta,
+		annotations=y,
+		params,
+		#reg coeffs prior parameters
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, # gaussian outcomes when FALSe
+		method="sLDA"
+)
 
-# model estimates that map how topics predict y
-result[[2]]$coefs
-# e.g., order topic words from 'most D' to 'most R'
-rbind(result[[2]]$coefs,top.topic.words(result[[2]]$topics,20))[,order(result[[2]]$coefs)]
+top.topic.words(result[[2]]$topics,10)
 ```
 
 ## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
+```{r}
+# 2. sLDA = inferring topics by predicting an outcome/annotation
+# pre-set some parameters
+set.seed(1005)
+k = 10
+# starting values for prediction
+params = sample(c(-1, 1), k, replace=TRUE)
+alpha = 1.0
+eta = 0.1
+
+# annotation to predict
+y=pty
+
+result[[2]]=slda.em(documents=docs[[1]],
+		K=k,
+		vocab=vocab,
+		num.e.iterations=10,
+		num.m.iterations=4,
+		alpha=alpha, eta=eta,
+		annotations=y,
+		params,
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, # gaussian outcomes when FALSe
+		method="sLDA"
+)
+
+###################################################
+top.topic.words(result[[2]]$topics,10)
+
+k = k
+# starting values for prediction--> here they are -1 and 1 as long as they vary
+params = sample(c(-1, 1), k, replace=TRUE)
+#set alpha--> by default set at 1
+alpha = 1.0
+#t a
+eta = 0.1
+
+# annotation to predict --> use party to constrian dist of topics 
+y=tone
+
+#exp maximization
+result[[2]]=slda.em(documents=docs[[1]],
+		K=k,
+		vocab=vocab,
+		num.e.iterations=10,
+		#inc iterations --> more convergence
+		num.m.iterations=4,
+		alpha=alpha, 
+		eta=eta,
+		annotations=y,
+		params,
+		#reg coeffs prior parameters
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, # gaussian outcomes when FALSe
+		method="sLDA"
+)
+
+top.topic.words(result[[2]]$topics,10)
+```
 
 ## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
 
