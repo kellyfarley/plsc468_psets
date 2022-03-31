@@ -49,11 +49,44 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 
 **Goal: Choose an appropriate value to set for the number of topics *K* that will be estimated for each model**
 
-Note: Kelly has some work in 2d which may be relevant!
-
 *Our choice of K:*
 
 *Description of method:*
+
+Good reference for STM: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
+
+Good reference for interpreting plots: https://juliasilge.com/blog/evaluating-stm/
+
+We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs" for future STM analysis.
+
+```{r}
+temp = textProcessor(documents = ads$texts, metadata = ads[, 2:7]) # clean data
+outs = prepDocuments(temp$documents, temp$vocab, temp$meta) # eliminates very common and very rare terms
+```
+
+One of the most difficult decisions in STM modeling is choosing the best value of k for the data. We use the stm::searchK() function to try k's ranging from 2-20 to help find the best value. This line of code can take hours to run, so it is not evaluated in this code; rather, the results are provided in a plot. We first test a few sample points between k=5 and k=50, then narrow in on the k=10 to k=20 interval to decide on the best value of k.
+
+```{r eval=F}
+# determining best value of K
+findingk <- searchK(outs$documents, outs$vocab, K = c(5, 10, 15, 20, 50),
+ prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
+
+save(findingk, file = "pset3/stm_k_results.Rda")
+
+pdf("pset3/findingkplot.pdf") 
+plot(findingk)
+dev.off()
+
+findingk_narrowed <- searchK(outs$documents, outs$vocab, K = c(10:20),
+ prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
+
+save(findingk_narrowed, file = "pset3/stm_k_results.Rda")
+pdf("pset3/findingkplot_narrowed.pdf") 
+plot(findingk_narrowed)
+dev.off()
+
+k = 11 # thoughts?
+```
 
 *Defense of method:*
 
@@ -274,42 +307,7 @@ slda_tone_results <- top.topic.words(result[[2]]$topics,10)
 
 ## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
 
-Good reference for STM: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
-
-Good reference for interpreting plots: https://juliasilge.com/blog/evaluating-stm/
-
-We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs" for future STM analysis.
-
-```{r}
-temp = textProcessor(documents = ads$texts, metadata = ads[, 2:7]) # clean data
-outs = prepDocuments(temp$documents, temp$vocab, temp$meta) # eliminates very common and very rare terms
-```
-
-One of the most difficult decisions in STM modeling is choosing the best value of k for the data. We use the stm::searchK() function to try k's ranging from 2-20 to help find the best value. This line of code can take hours to run, so it is not evaluated in this code; rather, the results are provided in a plot. We first test a few sample points between k=5 and k=50, then narrow in on the k=10 to k=20 interval to decide on the best value of k.
-
-```{r eval=F}
-# determining best value of K
-findingk <- searchK(outs$documents, outs$vocab, K = c(5, 10, 15, 20, 50),
- prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
-
-save(findingk, file = "pset3/stm_k_results.Rda")
-
-pdf("pset3/findingkplot.pdf") 
-plot(findingk)
-dev.off()
-
-findingk_narrowed <- searchK(outs$documents, outs$vocab, K = c(10:20),
- prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
-
-save(findingk_narrowed, file = "pset3/stm_k_results.Rda")
-pdf("pset3/findingkplot_narrowed.pdf") 
-plot(findingk_narrowed)
-dev.off()
-
-k = 11 # thoughts?
-```
-
-Now that we have our cleaned data and our value of k, we are ready to run an STM model.
+In work done in part 1, we cleaned our data using textProcessor() and prepDocuments() and determined the best value of k, so we are ready to run an stm model.
 
 ```{r}
 result_2d = stm(documents=outs$documents,vocab=outs$vocab,K=k,
