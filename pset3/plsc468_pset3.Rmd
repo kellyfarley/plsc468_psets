@@ -154,8 +154,9 @@ result[[5]] <- FindTopicsNumber(
 
 docs=lexicalize(outs$vocab)
 # you can extract the word list in the 2nd part of the docs list object
-vocab=docs[[2]]
+vocab = docs[[2]]
 result=list()
+
 # this is the workhorse function
 k=10 # pre-specify # of topics
 result[[1]]=lda.collapsed.gibbs.sampler(docs[[1]], 		## lexicalized word counts
@@ -176,19 +177,14 @@ lda_results <- top.topic.words(result[[1]]$topics,10)
 
 ```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
-docs=lexicalize(vocab)
-# you can extract the word list in the 2nd part of the docs list object
-vocab=docs[[2]]
 
-# pre-set some parameters
-k = k
 # starting values for prediction
 params = sample(c(-1, 1), k, replace=TRUE)
 alpha = 1.0
 eta = 0.1
 
 # annotation to predict
-y=party
+y=outs[[3]]$party
 
 result[[2]]=slda.em(documents=docs[[1]],
 		K=k,
@@ -211,18 +207,16 @@ slda_party_results <- top.topic.words(result[[2]]$topics,10)
 ## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
 ```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
-# pre-set some parameters
-set.seed(1005)
-k = 10
+
 # starting values for prediction
 params = sample(c(-1, 1), k, replace=TRUE)
 alpha = 1.0
 eta = 0.1
 
 # annotation to predict
-y=outs$tone
+y=outs[[3]]$tone
 
-result[[2]]=slda.em(documents=docs[[1]],
+result[[3]]=slda.em(documents=docs[[1]],
 		K=k,
 		vocab=vocab,
 		num.e.iterations=10,
