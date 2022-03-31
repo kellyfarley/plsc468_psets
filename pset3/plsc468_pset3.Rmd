@@ -274,7 +274,9 @@ slda_tone_results <- top.topic.words(result[[2]]$topics,10)
 
 ## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
 
-Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
+Good reference for STM: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
+
+Good reference for interpreting plots: https://juliasilge.com/blog/evaluating-stm/
 
 We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs" for future STM analysis.
 
