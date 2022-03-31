@@ -143,7 +143,6 @@ result[[5]] <- FindTopicsNumber(
 
 ```{r eval = F}
 # 1. baseline LDA
-set.seed(1005)
 
 # pre-processing step prior to lexicalizing in the text
 #texts20=texts[iq] # retained from above, indexing those with at least 10 words
@@ -153,7 +152,7 @@ set.seed(1005)
 #  - compactness is achieved by ignored word counts when these are 0 (zero)
 #  - side not, lexicalize also ignores 'counts' and just sets mentions to be 0,1
 
-docs=lexicalize(vocab)
+docs=lexicalize(outs$vocab)
 # you can extract the word list in the 2nd part of the docs list object
 vocab=docs[[2]]
 result=list()
@@ -182,14 +181,14 @@ docs=lexicalize(vocab)
 vocab=docs[[2]]
 
 # pre-set some parameters
-k = 10
+k = k
 # starting values for prediction
 params = sample(c(-1, 1), k, replace=TRUE)
 alpha = 1.0
 eta = 0.1
 
 # annotation to predict
-y=outs$party
+y=party
 
 result[[2]]=slda.em(documents=docs[[1]],
 		K=k,
@@ -197,7 +196,7 @@ result[[2]]=slda.em(documents=docs[[1]],
 		num.e.iterations=10,
 		num.m.iterations=4,
 		alpha=alpha, eta=eta,
-		annotations=y,
+		annotations=party,
 		params,
 		variance=0.25,
 		lambda=1.0,
