@@ -177,6 +177,10 @@ lda_results <- top.topic.words(result[[1]]$topics,10)
 
 ```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
+docs=lexicalize(vocab)
+# you can extract the word list in the 2nd part of the docs list object
+vocab=docs[[2]]
+
 # pre-set some parameters
 k = 10
 # starting values for prediction
@@ -209,7 +213,8 @@ slda_party_results <- top.topic.words(result[[2]]$topics,10)
 ```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
 # pre-set some parameters
-k = k
+set.seed(1005)
+k = 10
 # starting values for prediction
 params = sample(c(-1, 1), k, replace=TRUE)
 alpha = 1.0
