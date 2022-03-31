@@ -49,6 +49,8 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 
 **Goal: Choose an appropriate value to set for the number of topics *K* that will be estimated for each model**
 
+Note: Kelly has some work in 2d which may be relevant!
+
 *Our choice of K:*
 
 *Description of method:*
@@ -57,7 +59,7 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 
 *Preprocessing of ad strings into correct format for lda() and stm():*
 
-```{r}
+```{r eval = F}
 #collect some covars
 #Numi tryng and failing to clean
 party <- ads$party
@@ -86,7 +88,7 @@ for(i in 1:nrow(tdoc)){
 platforms$texts=strs
 ```
 
-```{r}
+```{r eval = F}
 # 5. tuning lda to improve selection K
 library(ldatuning)
 
@@ -107,7 +109,7 @@ result[[5]] <- FindTopicsNumber(
 
 ## 2a: Unsupervised LDA model using lda::lda.collapsed.gibs.sampler(.., k) (Numi)
 
-```{r}
+```{r eval = F}
 # 1. baseline LDA
 set.seed(1005)
 
@@ -141,7 +143,7 @@ lda_results <- top.topic.words(result[[1]]$topics,10)
 
 ## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k) (Numi)
 
-```{r}
+```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
 # pre-set some parameters
 set.seed(1005)
@@ -208,7 +210,7 @@ slda_party_results <- top.topic.words(result[[2]]$topics,10)
 ```
 
 ## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
-```{r}
+```{r eval = F}
 # 2. sLDA = inferring topics by predicting an outcome/annotation
 # pre-set some parameters
 set.seed(1005)
@@ -274,64 +276,85 @@ slda_tone_results <- top.topic.words(result[[2]]$topics,10)
 
 Good reference: https://sicss.io/2019/materials/day3-text-analysis/topic-modeling/rmarkdown/Topic_Modeling.html
 
-We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words.
+We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs" for future STM analysis.
 
 ```{r}
-load("pset3/adData.Rdata") # laod data
+temp = textProcessor(documents = ads$texts, metadata = ads[, 2:7]) # clean data
+outs = prepDocuments(temp$documents, temp$vocab, temp$meta) # eliminates very common and very rare terms
+```
 
-processed <- textProcessor(ads$texts, metadata = ads) # clean data
+One of the most difficult decisions in STM modeling is choosing the best value of k for the data. We use the stm::searchK() function to try k's ranging from 2-20 to help find the best value. This line of code can take hours to run, so it is not evaluated in this code; rather, the results are provided in a plot. We first test a few sample points between k=5 and k=50, then narrow in on the k=10 to k=20 interval to decide on the best value of k.
 
-# stm pacakge requires storing docs, meta data, and vocab
-out <- prepDocuments(processed$documents, processed$vocab, processed$meta) # eliminates very common and very rare terms
-docs <- out$documents
-vocab <- out$vocab
-meta <-out$meta
+```{r eval=F}
+# determining best value of K
+findingk <- searchK(outs$documents, outs$vocab, K = c(5, 10, 15, 20, 50),
+ prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
 
-# 3. stm set some structure and parsing code
-# textProcessor() => produces the data structure that is modeled in
+save(findingk, file = "pset3/stm_k_results.Rda")
 
-temp = textProcessor(documents=platforms$texts,metadata=platforms[,1:3])
-outs = prepDocuments(temp$documents, temp$vocab, temp$meta)
+pdf("pset3/findingkplot.pdf") 
+plot(findingk)
+dev.off()
 
-k=10
-set.seed(1005)
-result[[3]] = stm(documents=outs$documents,vocab=outs$vocab,K=k,
-	prevalence=~pty+year+state,data=outs$meta
-)
+findingk_narrowed <- searchK(outs$documents, outs$vocab, K = c(10:20),
+ prevalence =~ party + tone, data = outs$meta, verbose=FALSE)
 
+save(findingk_narrowed, file = "pset3/stm_k_results.Rda")
+pdf("pset3/findingkplot_narrowed.pdf") 
+plot(findingk_narrowed)
+dev.off()
 
-###################################################
-# outputs
+k = 11 # thoughts?
+```
 
-names(result[[3]])
+Now that we have our cleaned data and our value of k, we are ready to run an STM model.
 
-# (less than parsimonious) interface for collecting top 20 words =>
-stm_results <- t(labelTopics(model=result[[3]], topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+```{r}
+result_2d = stm(documents=outs$documents,vocab=outs$vocab,K=k,
+	prevalence=~party+tone,data=outs$meta)
+```
 
-# 4. CTM in topicmodels
-# unlike above, operates directly on a 'DocumentTermMatrix' object produced in tm
+If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
 
-docs = Corpus(VectorSource(platforms$texts))
-tdm = DocumentTermMatrix(docs)
-xdm=tdm[,which(colSums(as.matrix(tdm))>200)]
-xdm=xdm[which(rowSums(as.matrix(xdm))>0),]
+```{r}
+# view 3 top words associated with each topic
+plot(result_2d)
+```
 
-result[[4]]=CTM(x=xdm, k=k)
-slotNames(result[[4]])
-terms(result[[4]], 20)
+For this assignment, we are also interested in collecting the top 10 words in each category.
 
-library(tidytext)
-# tibbles using tidy
-#https://books.psychstat.org/textmining/topic-models.html
-r.topics = tidy(result[[4]], matrix = "beta")
+```{r}
+# (less than parsimonious) interface for collecting top 10 words =>
+stm_results_2d <- t(labelTopics(model=result_2d, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 ```
 
 ## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k) (Kelly)
 
+We repeat the same analysis as in 2d but use more variables for the modeling.
+
+```{r}
+result_2e = stm(documents=outs$documents,vocab=outs$vocab,K=k,
+	prevalence=~party+tone+office+policy+as.factor(state),data=outs$meta)
+```
+
+If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
+
+```{r}
+# view 3 top words associated with each topic
+plot(result_2e)
+```
+
+For this assignment, we are also interested in collecting the top 10 words in each category.
+
+```{r}
+# (less than parsimonious) interface for collecting top 10 words =>
+stm_results_2e <- t(labelTopics(model=result_2e, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+```
+
 ## Reflection
 **Are these roughly the same topics, or are there major differences in the topics being estimated?**
 We report the top ten words for each model specification in the results matrix. 
-```{r}
-result_matrix <- rbind(lda_results, slda_party_results, slda_tone_results, stm_results)
+```{r eval = F}
+result_matrix <- rbind(lda_results, slda_party_results, slda_tone_results, stm_results_2d, stm_results_2e)
 ```
 
