@@ -59,6 +59,16 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 
 ```{r}
 #collect some covars
+#Numi tryng and failing to clean
+party <- ads$party
+state <- str_sub(ads$state)
+df=as.data.frame(cbind(party,state),stringsAsFactors=F)
+df[,1]=as.numeric(df[,1])
+df[,2]=as.factor(df[,2])
+
+
+
+#here's his og code 
 year=str_sub(rownames(tdoc),1,4)
 pty=pty
 state=str_sub(rownames(tdoc),6,7)
