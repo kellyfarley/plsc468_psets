@@ -1,0 +1,135 @@
+---
+title: "PLSC 468 Final Project"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "4/6/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+library(reticulate)
+py_install("pandas")
+```
+
+# Load Data
+
+Setting the seed for future randomization:
+
+```{r}
+set.seed(1005)
+```
+
+```{r}
+# data source: https://github.com/smitp415/CSCI_544_Final_Project
+# has multiple data sets...
+
+task1 <- py_load_object("/Users/kellyfarley/Desktop/task1_data.pkl", pickle = "pickle")
+class0 <- py_load_object("/Users/kellyfarley/Desktop/class0.pkl", pickle = "pickle")
+class1 <- py_load_object("/Users/kellyfarley/Desktop/class1.pkl", pickle = "pickle")
+clean <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_Project/main/clean_data.csv")) # i think this is the best one to be using because it has the most information
+
+dat <- clean
+```
+
+# Clean Data
+
+# Data Structure
+
+Dimensions
+Variables
+Years cases are from
+Guilty / not guilty verdicts
+
+# Most Frequent Words
+
+Copy from Pset 1
+Most frequent words across corpus, most frequent words across guilty versus not guilty, words with highest correlation
+
+## Analysis
+
+*What can this tell us about differences btwn guilty and not guilty verdicts?*
+
+## Future Suggestions
+
+# Verdict Prediction
+
+Copy from Pset 2
+Build test, training, prediction
+Choose stopword, non-stopword, fighting words, Bayesian method
+
+First, we break up our document term matrix into two separate dtm's: stop words (stop.dtm, for use in 1a) and non-stop words (non.dtm, for use in 1b). We use the stop words from the stopword package.
+
+```{r}
+# using stop words from stopword() package
+stops <- stopwords(kind = "en")
+
+# note apostrophes are not removed in stops, but are in our texts
+stops <- c(gsub(stops, pattern="[']", replace=''))
+
+# make corpus
+texts=VCorpus(VectorSource(dat$facts))
+
+# make dtm
+dtm = as.matrix(DocumentTermMatrix(texts))
+
+# remove non stop words
+
+non.stops=array(TRUE,ncol(dtm))
+
+stops=sort(stops)
+
+col.names=colnames(dtm)
+for(j in 1:length(stops)){
+	ik=which(stops[j]==col.names)
+	if(length(ik)>0){
+		non.stops[ik]=F
+	}
+}
+
+non.dtm  = dtm[,non.stops] # non-stop words
+stop.dtm = dtm[,!non.stops] # stop words
+```
+
+Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. Note that we used our discretion on this training/testing proportion and have decided to split the known papers exactly in half due to overfitting and validation tradeoffs. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator <<-.
+
+```{r eval=F}
+# function to split into testing, training, prediction sets
+splitSets <- function(dtm){
+  # define training, testing, and prediction sets
+  
+  # randomly assign known papers to training (50%) and testing (50%)
+  N=nrow(dtm)
+  s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+  
+  # train with 1/2 of known
+  x.train <<- dtm[which(s.vec==1),]
+  y.train <<- dtm$classes[which(s.vec==1)]
+  
+  # test with other 1/2 of known
+  x.test <<- dtm[which(s.vec==2),]
+  y.test <<- knownpapers$classes[which(s.vec==2)]
+}
+
+splitSets(stop.dtm)
+```
+
+## Analysis
+
+*Are we able to predict guilty vs not guilty verdicts? What's the best method for prediction?*
+
+## Future Suggestions

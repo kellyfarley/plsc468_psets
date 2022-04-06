@@ -30,6 +30,7 @@ library(lda)
 library(topicmodels) 
 library(stm)
 library(ldatuning)
+library(SnowballC)
 ```
 Setting the seed for future randomization:
 
@@ -57,19 +58,19 @@ Good reference for STM: https://sicss.io/2019/materials/day3-text-analysis/topic
 
 Good reference for interpreting plots: https://juliasilge.com/blog/evaluating-stm/
 
-We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs" for future STM analysis.
+We use the function textProcessor() to build our corpus. This function converts text to lowercase, removes punctuation, stopwords, and numbers, and stems words. We also use the function prepDocuments(), which eliminates very common and very rare terms. Our data is now prepped in the variable "outs_stm" for future STM analysis.
 
 ```{r}
-temp_lda = textProcessor(documents = ads$texts, metadata = ads[, 2:7]) # clean data
-outs_lda = prepDocuments(temp_lda$documents, temp_lda$vocab, temp_lda$meta) # eliminates very common and very rare terms
+temp_stm = textProcessor(documents = ads$texts, metadata = ads[, 2:7]) # clean data
+outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta) # eliminates very common and very rare terms
 ```
 
 One of the most difficult decisions in STM modeling is choosing the best value of k for the data. We use the stm::searchK() function to try k's ranging from 2-20 to help find the best value. This line of code can take hours to run, so it is not evaluated in this code; rather, the results are provided in a plot. We first test a few sample points between k=5 and k=50, then narrow in on the k=10 to k=20 interval to decide on the best value of k.
 
 ```{r eval=F}
 # determining best value of K
-findingk <- searchK(outs_lda$documents, outs_lda$vocab, K = c(5, 10, 15, 20, 50),
- prevalence =~ party + tone, data = outs_lda$meta, verbose=FALSE)
+findingk <- searchK(outs_stm$documents, outs_stm$vocab, K = c(5, 10, 15, 20, 50),
+ prevalence =~ party + tone, data = outs_stm$meta, verbose=FALSE)
 
 save(findingk, file = "pset3/stm_k_results.Rda")
 
@@ -77,8 +78,8 @@ pdf("pset3/findingkplot.pdf")
 plot(findingk)
 dev.off()
 
-findingk_narrowed <- searchK(outs_lda$documents, outs_lda$vocab, K = c(10:20),
- prevalence =~ party + tone, data = outs_lda$meta, verbose=FALSE)
+findingk_narrowed <- searchK(outs_stm$documents, outs_stm$vocab, K = c(10:20),
+ prevalence =~ party + tone, data = outs_stm$meta, verbose=FALSE)
 
 save(findingk_narrowed, file = "pset3/stm_k_results.Rda")
 pdf("pset3/findingkplot_narrowed.pdf") 
@@ -92,7 +93,7 @@ k = 11 # thoughts?
 # code from chelsea (done in the same way as class)
 
 # creating a tdm of documents
-docs = Corpus(VectorSource(ads$texts))
+docs = Corpus(VectorSource(outs_stm$documents))
 tdm = DocumentTermMatrix(docs)
 
 # calculating lda tuning metrics - big picture overview
@@ -108,11 +109,11 @@ metrics <- FindTopicsNumber(
 
 FindTopicsNumber_plot(metrics)
 
-# calculating lda tuning metrics - 10-30
+# calculating lda tuning metrics - 5-30
 
-metrics <- FindTopicsNumber(
+metrics_final <- FindTopicsNumber(
   tdm,
-  topics = seq(from = 5, to = 25, by = 1),
+  topics = seq(from = 5, to = 30, by = 1),
   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
   method = "Gibbs",
   control = list(seed = 77),
@@ -120,12 +121,12 @@ metrics <- FindTopicsNumber(
   verbose = TRUE
 )
 
-FindTopicsNumber_plot(metrics)
+FindTopicsNumber_plot(metrics_final)
 
-# think best is k=10
+# think best is k=11
 ```
 
-We want to minimize the Arun and CaoJuan metrics, and we want to maximize the Deveaud and Grifiths methods. First, we calculated these metrics for a large K range (2-100) with large steps to observe the general pattern. It seems like the Arn and CaoJuan metrics decrease over time, aand the Arun metric increases over time, but the Deveaud metric has a local peak somewhere from 10-20. We then narrowed in on a K range from 5-25. From the plots, it seems that 10 topics may be the best K when taking all 4 metrics intoo account. While the Arun, CaoJuan, and Griffiths metrics are still moving, they start to slightly plateau, and the Deveaud metric has a local peak. 
+We want to minimize the Arun and CaoJuan metrics, and we want to maximize the Deveaud and Grifiths metrics. First, we calculated these metrics for a large K range (2-100) with large steps to observe the general pattern. It seems like the Arun, CaoJuan, and Deveaud metrics decrease over time, with the CaoJuan metric being the lowest around 22, the Griffiths metric increases over time. We then narrowed in on a K range from 5-30. From the plots, while the 4 metrics do not agree on a best K, it seems that 11 topics may be the most suitable when taking all metrics into account. While the Arun, CaoJuan, and Griffiths metrics are still moving, the Deveaud metric has a local peak. 
 
 *Defense of method:*
 
@@ -269,8 +270,8 @@ slda_tone_results <- top.topic.words(result[[2]]$topics,10)
 In work done in part 1, we cleaned our data using textProcessor() and prepDocuments() and determined the best value of k, so we are ready to run an stm model.
 
 ```{r}
-result_2d = stm(documents=outs_lda$documents,vocab=outs_lda$vocab,K=k,
-	prevalence=~party+tone,data=outs_lda$meta)
+result_2d = stm(documents=outs_stm$documents,vocab=outs_stm$vocab,K=k,
+	prevalence=~party+tone,data=outs_stm$meta)
 ```
 
 If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
@@ -292,8 +293,8 @@ stm_results_2d <- t(labelTopics(model=result_2d, topics = NULL, n = 10, frexweig
 We repeat the same analysis as in 2d but use more variables for the modeling.
 
 ```{r}
-result_2e = stm(documents=outs_lda$documents,vocab=outs_lda$vocab,K=k,
-	prevalence=~party+tone+office+policy+as.factor(state),data=outs_lda$meta)
+result_2e = stm(documents=outs_stm$documents,vocab=outs_stm$vocab,K=k,
+	prevalence=~party+tone+office+policy+as.factor(state),data=outs_stm$meta)
 ```
 
 If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
