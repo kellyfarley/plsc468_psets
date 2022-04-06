@@ -1,0 +1,68 @@
+---
+title: "PLSC 468 Final Project"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "4/6/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+library(e1071)
+library(stringr)
+library(rjson)
+library(tm)
+library(tidyverse)
+```
+
+# Load Data
+
+```{r}
+raw <- fromJSON(file="/Users/kellyfarley/Desktop/oyez_pretty.json")
+```
+
+# Clean Data
+
+# Data Structure
+
+Dimensions
+Variables
+Years cases are from
+Guilty / not guilty verdicts
+
+# Most Frequent Words
+
+Copy from Pset 1
+Most frequent words across corpus, most frequent words across guilty versus not guilty, words with highest correlation
+
+## Analysis
+
+*What can this tell us about differences btwn guilty and not guilty verdicts?*
+
+## Future Suggestions
+
+# Verdict Prediction
+
+Copy from Pset 2
+Build test, training, prediction
+Choose stopword, non-stopword, fighting words, Bayesian method
+
+## Analysis
+
+*Are we able to predict guilty vs not guilty verdicts? What's the best method for prediction?*
+
+## Future Suggestions

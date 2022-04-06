@@ -93,7 +93,7 @@ k = 11 # thoughts?
 # code from chelsea (done in the same way as class)
 
 # creating a tdm of documents
-docs = Corpus(VectorSource(outs_lda$documents))
+docs = Corpus(VectorSource(outs_stm$documents))
 tdm = DocumentTermMatrix(docs)
 
 # calculating lda tuning metrics - big picture overview
