@@ -63,7 +63,7 @@ We note 16 variables recorded for 3,303 SCOTUS cases. Only some of these variabl
 
 ```{r}
 clean <- dat %>%
-  select(term) %>%
+  select(name, href, term) %>%
   mutate(term = case_when(term == "1789-1850" ~ round(mean(c(1789, 1850)), 0),
                    term == "1850-1900" ~ round(mean(c(1850, 1900)), 0),
                    term == "1900-1940" ~ round(mean(c(1900, 1940)), 0),
@@ -71,16 +71,29 @@ clean <- dat %>%
                    TRUE ~ as.numeric(term))) %>%
   mutate(term = as.numeric(term))
 
+load("/Users/kellyfarley/Desktop/mqData2020.Rda")
+
 ```
 
--term: Since 1955, the term of the Supreme Court begins from October of the given year and extends til October of the following year. Previously, the term of the court has been classified into broader terms: 1789-1850, 1850-1900, 1900-1940, 1940-1955. For our analysis, we want to consider "term" as a continuous variable. Therefore, the ranged values will be replaced with the year in the middle of the range. While it would be preferred to have the actual year of the decision, we note that very few cases take place before 1955: only 59 of the over 3k cases.
--first_party:
--second_party:
--facts:
--first_party_winner:
--issue_area:
+-term (numeric): Since 1955, the term of the Supreme Court begins from October of the given year and extends til October of the following year. Previously, the term of the court has been classified into broader terms: 1789-1850, 1850-1900, 1900-1940, 1940-1955. For our analysis, we want to consider "term" as a continuous variable. Therefore, the ranged values will be replaced with the year in the middle of the range. While it would be preferred to have the actual year of the decision, we note that very few cases take place before 1955: only 59 of the over 3k cases.
+-first_party (character): This is the first party in the case name.
+-second_party (character): This is the second party in the case name.
+-facts: This is the raw text of the case facts and needs to be cleaned for future analysis.
+-first_party_winner (logical): This variable indicates whether the first party won the case and is either TRUE or FALSE. We manipulate this variable to be equal to the name of the party who won the case.
+-issue_area (factor): There are 14 possible issue areas a case can cover: "Attorneys," "Civil Rights," "Criminal Procedure," "Due Process," "Economic Activity," "Federal Taxation," "Federalism," "First Amendment," "Interstate Relations," "Judicial Power," "Miscellaneous," "Privacy," "Private Action," and "Unions." NA values are also possible.
 
-We keep the "ID," "name" and "href" columns, which give the number, name, and website associated with each case, for ease of referral, though they will not be used for any statistical analysis.
+We keep the "name" and "href" columns for ease of referral, though they will not be used for any statistical analysis.
+
+https://www.supremecourt.gov/about/members_text.aspx justices on the court, could use as a proxy for conservative vs liberal, Democratic vs Republican appointed (may not hold up all of the time; president nominates and senate confirms; control of Senate)
+https://en.wikipedia.org/wiki/Ideological_leanings_of_United_States_Supreme_Court_justices ideological leanings of court
+
+who is the party? person or company?
+
+model can be useful for controversial cases - don't always bring a case to the court because you want 1) a good set of facts, 2) a good composition of the court, because you don't want to set a bad precedent
+
+take into account overall composition of court: # dem appointed, # rep appointed (would be even better to also know the Senate and know the individual justice's liberal vs conservative tendecies but prob not possible at this exact time)
+
+https://mqscores.lsa.umich.edu/measures.php dataset of justice leanings 1937-2020 by justice with the year the justice serves...slight issue bc a few years have over 9 justices (times of switchover), but our model simply will just not deal with this... lol
 
 # Data Structure
 
