@@ -50,10 +50,6 @@ Goal: to estimate a series of unsupervised topic models using 3255 ads aired in 
 
 **Goal: Choose an appropriate value to set for the number of topics *K* that will be estimated for each model**
 
-*Our choice of K:*
-
-*Description of method:*
-
 *Preprocessing of ad strings into correct format for lda() and stm():*
 lda() cleaning 
 
@@ -81,6 +77,10 @@ ads$txts=txts
 temp_stm = textProcessor(documents=ads$txts,metadata=ads[,2:7])
 outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta)
 ```
+
+*Our choice of K:*
+
+*Description of method:*
 One of the most difficult decisions in STM modeling is choosing the best value of k for the data. We use the stm::searchK() function to try k's ranging from 2-20 to help find the best value. This line of code can take hours to run, so it is not evaluated in this code; rather, the results are provided in a plot. We first test a few sample points between k=5 and k=50, then narrow in on the k=10 to k=20 interval to decide on the best value of k.
 
 ```{r eval=F}
@@ -356,120 +356,3 @@ slda_tone_results
 stm_results_2d
 stm_results_2e
 ```
-
-
-
-## 2b: Supervised LDA model to predict *party* using lda::slda.em(..., party, k) (Numi)
-
-```{r eval = F}
-# 2. sLDA = inferring topics by predicting an outcome/annotation
-
-# starting values for prediction
-params = sample(c(-1, 1), k, replace=TRUE)
-alpha = 1.0
-eta = 0.1
-
-# annotation to predict
-y=outs_stm[["meta"]][["party"]]
-
-result[[2]]=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, eta=eta,
-		annotations=y,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, # gaussian outcomes when FALSe
-		method="sLDA"
-)
-
-###################################################
-slda_party_results <- top.topic.words(result[[2]]$topics,10)
-```
-
-## 2c: Supervised LDA model to predict *tone* using lda::slda.em(..., tone, k) (Numi)
-```{r eval = F}
-# 2. sLDA = inferring topics by predicting an outcome/annotation
-
-# starting values for prediction
-params = sample(c(-1, 1), k, replace=TRUE)
-alpha = 1.0
-eta = 0.1
-
-# annotation to predict
-y=outs_stm[["meta"]][["tone"]]
-
-result[[3]]=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, eta=eta,
-		annotations=y,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-
-###################################################
-slda_tone_results <- top.topic.words(result[[2]]$topics,10)
-```
-
-## 2d: Structural topic model using stm::stm(..., prevalence = ~ party + tone, k) (Kelly)
-
-In work done in part 1, we cleaned our data using textProcessor() and prepDocuments() and determined the best value of k, so we are ready to run an stm model.
-
-```{r}
-result_2d = stm(documents=outs_stm$documents,vocab=outs_stm$vocab,K=k,
-	prevalence=~party+tone,data=outs_stm$meta)
-```
-
-If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
-
-```{r}
-# view 3 top words associated with each topic
-plot(result_2d)
-```
-
-For this assignment, we are also interested in collecting the top 10 words in each category.
-
-```{r}
-# (less than parsimonious) interface for collecting top 10 words =>
-stm_results_2d <- t(labelTopics(model=result_2d, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
-```
-
-## 2e: Structural topic model using stm::stm(..., prevalence = ~ party + tone + office + policy + as.factor(state), k) (Kelly)
-
-We repeat the same analysis as in 2d but use more variables for the modeling.
-
-```{r}
-result_2e = stm(documents=outs_stm$documents,vocab=outs_stm$vocab,K=k,
-	prevalence=~party+tone+office+policy+as.factor(state),data=outs_stm$meta)
-```
-
-If we want to get a sense of only the 3 top words associated with each topic and also the prevalence of topics in order to sense-check our groups, we can use the plot function.
-
-```{r}
-# view 3 top words associated with each topic
-plot(result_2e)
-```
-
-For this assignment, we are also interested in collecting the top 10 words in each category.
-
-```{r}
-# (less than parsimonious) interface for collecting top 10 words =>
-stm_results_2e <- t(labelTopics(model=result_2e, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
-```
-
-## Reflection
-**Are these roughly the same topics, or are there major differences in the topics being estimated?**
-We report the top ten words for each model specification in the results matrix. 
-```{r eval = F}
-result_matrix <- rbind(lda_results, slda_party_results, slda_tone_results, stm_results_2d, stm_results_2e)
-```
-
