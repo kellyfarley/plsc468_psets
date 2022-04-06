@@ -132,16 +132,6 @@ We want to minimize the Arun and CaoJuan metrics, and we want to maximize the De
 *Preprocessing of ad strings into correct format for lda() and stm():*
 
 ```{r eval = F}
-#collect some covars
-#Numi tryng and failing to clean
-party <- outs$party
-state <- str_sub(ads$state)
-df=as.data.frame(cbind(party,state),stringsAsFactors=F)
-df[,1]=as.numeric(df[,1])
-df[,2]=as.factor(df[,2])
-
-
-
 #here's his og code 
 year=str_sub(rownames(tdoc),1,4)
 pty=pty
@@ -192,7 +182,7 @@ result[[5]] <- FindTopicsNumber(
 #  - compactness is achieved by ignored word counts when these are 0 (zero)
 #  - side not, lexicalize also ignores 'counts' and just sets mentions to be 0,1
 
-docs=lexicalize(outs$vocab)
+docs=lexicalize(temp_lda$vocab)
 # you can extract the word list in the 2nd part of the docs list object
 vocab = docs[[2]]
 result=list()
@@ -224,7 +214,7 @@ alpha = 1.0
 eta = 0.1
 
 # annotation to predict
-y=outs[[3]]$party
+y=temp_lda[[3]]$party
 
 result[[2]]=slda.em(documents=docs[[1]],
 		K=k,
