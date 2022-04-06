@@ -30,6 +30,7 @@ library(lda)
 library(topicmodels) 
 library(stm)
 library(ldatuning)
+library(SnowballC)
 ```
 Setting the seed for future randomization:
 
@@ -92,7 +93,7 @@ k = 11 # thoughts?
 # code from chelsea (done in the same way as class)
 
 # creating a tdm of documents
-docs = Corpus(VectorSource(ads$texts))
+docs = Corpus(VectorSource(outs_lda$documents))
 tdm = DocumentTermMatrix(docs)
 
 # calculating lda tuning metrics - big picture overview
@@ -108,11 +109,11 @@ metrics <- FindTopicsNumber(
 
 FindTopicsNumber_plot(metrics)
 
-# calculating lda tuning metrics - 10-30
+# calculating lda tuning metrics - 5-30
 
-metrics <- FindTopicsNumber(
+metrics_final <- FindTopicsNumber(
   tdm,
-  topics = seq(from = 5, to = 25, by = 1),
+  topics = seq(from = 5, to = 30, by = 1),
   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
   method = "Gibbs",
   control = list(seed = 77),
@@ -120,12 +121,12 @@ metrics <- FindTopicsNumber(
   verbose = TRUE
 )
 
-FindTopicsNumber_plot(metrics)
+FindTopicsNumber_plot(metrics_final)
 
-# think best is k=10
+# think best is k=11
 ```
 
-We want to minimize the Arun and CaoJuan metrics, and we want to maximize the Deveaud and Grifiths methods. First, we calculated these metrics for a large K range (2-100) with large steps to observe the general pattern. It seems like the Arn and CaoJuan metrics decrease over time, aand the Arun metric increases over time, but the Deveaud metric has a local peak somewhere from 10-20. We then narrowed in on a K range from 5-25. From the plots, it seems that 10 topics may be the best K when taking all 4 metrics intoo account. While the Arun, CaoJuan, and Griffiths metrics are still moving, they start to slightly plateau, and the Deveaud metric has a local peak. 
+We want to minimize the Arun and CaoJuan metrics, and we want to maximize the Deveaud and Grifiths metrics. First, we calculated these metrics for a large K range (2-100) with large steps to observe the general pattern. It seems like the Arun, CaoJuan, and Deveaud metrics decrease over time, with the CaoJuan metric being the lowest around 22, the Griffiths metric increases over time. We then narrowed in on a K range from 5-30. From the plots, while the 4 metrics do not agree on a best K, it seems that 11 topics may be the most suitable when taking all metrics into account. While the Arun, CaoJuan, and Griffiths metrics are still moving, the Deveaud metric has a local peak. 
 
 *Defense of method:*
 
