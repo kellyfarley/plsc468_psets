@@ -23,6 +23,8 @@ knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
 library(tidyverse)
+library(broom)
+library(glmnet)
 ```
 
 Setting the seed for future randomization:
@@ -43,19 +45,76 @@ Goal: to use the lasso, ridge, and elastic net to classify the correct party (D 
 
 **Using glmnet(), estimate a ridge regression model (alpha = 0) to predict party in a training set. In the model, include all 5056 words and a shrinkage parameter lambda = 5056/478.**
 
+```{r}
+# divide into test and training
+
+N=nrow(tdoc)
+s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+  
+# train with 1/2 of known
+x.train <- tdoc[which(s.vec==1),]
+y.train <- pty[which(s.vec==1)]
+  
+# test with other 1/2 of known
+x.test <- tdoc[which(s.vec==2),]
+y.test <- pty[which(s.vec==2)]
+```
+
+```{r}
+# given parameter
+lambda = 5056/478
+
+# train
+ridge_reg <- glmnet(x.train, y.train, alpha = 0, lambda = lambda)
+```
+
 **Using a separate testing set, assess how many platforms your ridge model correctly classified. What is the out-of-sample accuracy rate?**
+
+```{r}
+# test
+test_1a <- ridge_reg$a0+x.test%*%ridge_reg$beta[,1]
+tau=(min(test_1a[y.test==-1])+max(test_1a[y.test==1]))/2
+
+y.pred <- as.numeric(test_1a>tau)
+y.pred[y.pred == 0] <- -1
+
+# calculate accuracy
+sub.vector <- y.pred - y.test # 0's indicate correct classification
+accuracy <- sum(sub.vector == 0) / length(sub.vector)
+```
+
+The out-of-sample accuracy rate is 80%.
 
 # 1b: Lasso Regression Model
 
 **Using glmnet(), estimate a lasso regression model (alpha = 1) to predict party in a training set. In the model, include all 5056 words and a shrinkage parameter lambda = 5056/478.**
 
+```{r}
+lasso_reg <- glmnet(x.train, y.train, alpha = 1, lambda = lambda)
+```
+
 **Using a separate testing set, assess how many platforms your lasso model correctly classified. What is the out-of-sample accuracy rate?**
+
+```{r}
+# test
+test_1b <- lasso_reg$a0+x.test%*%lasso_reg$beta[,1]
+tau=(min(test_1b[y.test==-1])+max(test_1b[y.test==1]))/2
+
+y.pred <- as.numeric(test_1b>tau)
+y.pred[y.pred == 0] <- -1
+
+# calculate accuracy
+sub.vector <- y.pred - y.test # 0's indicate correct classification
+accuracy <- sum(sub.vector == 0) / length(sub.vector)
+```
+
+The out-of-sample accuracy is 54%.
 
 # 1c: Elastic Net
 
-**Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lamba from 0.5-10.5 by increments of 0.5.**
+**Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lambda from 0.5-10.5 by increments of 0.5.**
 
-```{r}
+```{r eval = F}
 # initial tuning range
 k=10
 alpha=seq(from=0,to=1,by=0.1)
@@ -64,7 +123,7 @@ lambda=seq(from=0.5,to=10.5,by=0.5)
 sumMSE=matrix(NA,length(alpha),length(lambda))
 
 for(i in 1:length(alpha)){
-  oo=cv.glmnet(nfolds=3,x=x.train, y=y.train, family=c("gaussian"),nlambda=length(lambda),
+  oo=cv.glmnet(nfolds=k,x=x.train, y=y.train, family=c("gaussian"),nlambda=length(lambda),
   	alpha=alpha[i],lambda=lambda)
   if(length(oo$cvm)==length(sumMSE[i,])){
   	sumMSE[i,]=oo$cvm
