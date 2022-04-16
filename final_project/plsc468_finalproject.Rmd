@@ -26,6 +26,9 @@ library(e1071)
 library(stringr)
 library(tm)
 library(tidyverse)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
 #library(reticulate)
 #library(rjson)
 #library(jsonlite)
@@ -74,13 +77,21 @@ dat <- dat %>%
 ```
 
 -name (character): The name of the case, e.g. "Roe v. Wade."
+
 -href (character): The URL link to the case in the Oyez API, for ease of reference
+
 -term (numeric): Since 1955, the term of the Supreme Court begins from October of the given year and extends til October of the following year. Previously, the term of the court has been classified into broader terms: 1789-1850, 1850-1900, 1900-1940, 1940-1955. For our analysis, we want to consider "term" as a continuous variable. Therefore, the ranged values will be replaced with the year in the middle of the range. While it would be preferred to have the actual year of the decision, we note that very few cases take place before 1955: only 59 of the over 3k cases.
+
 -facts (character): This is the raw text of the case facts and needs to be cleaned for future analysis.
+
 -majority_vote (numeric): The number of justices who agreed to the case's disposition
+
 -minority_vote (numeric): The number of justices who did not agree to the case's disposition
+
 -decision_type (factor): A phrase indicating the court's level of agreement on the case's outcome, e.g. "majority opinion," or "dismissal - moot"
+
 -disposition (factor): A phrase indicating the court's judgement on the status of the case, e.g. "reversed" or "affirmed"
+
 -issue_area (factor): A phrase indicating the topic of the case, e.g. "Civil Rights"
 
 To ensure the dataset variables are as expected, we investigate the range of each variable.
@@ -118,7 +129,7 @@ dat <- dat %>%
   filter(term > 1955)
 ```
 
-The terms from the dataset range from 1820 to 2020. We note the vast majority of cases in the dataset are from after 1950: only 59 out of the over 3k cases are from earlier. Therefore, we decide to cutoff the dataset at cases in 1950 or later, with the most recent cases being from the term ending in October of 2021.
+The terms from the dataset range from 1820 to 2020. We note the vast majority of cases in the dataset are from after 1950: only 59 out of the over 3k cases are from earlier. Therefore, we decide to cutoff the dataset at cases after 1955, with the most recent cases being from the term ending in October of 2021.
 
 ```{r}
 votes <- dat %>%
@@ -212,7 +223,7 @@ ggplot(dat, aes(x=issue_area)) +
 
 We note a variety of issue areas, particularly Civil Rights, Criminal Procedure, and Economic Activity.
 
-Ggiven the large influence the ideological leanings of individual justices is thought to have over court opinions, w combine our main dataset about SCOTUS court cases with another dataset about the Martin-Quinn scores of the justices. A more negative Martin-Quinn score indicates a more liberal record, while a more positive Martin-Quinn score indicates a more conservative record. Martin-Quinn scores may change for a justice from term to term because they are updated as opinions are released. For our purposes, we average the ideological scores of each justice who was on the Court in a given term. 
+Given the large influence the ideological leanings of individual justices is thought to have over court opinions, we combine our main dataset about SCOTUS court cases with another dataset about the Martin-Quinn scores of the justices. A more negative Martin-Quinn score indicates a more liberal record, while a more positive Martin-Quinn score indicates a more conservative record. Martin-Quinn scores may change for a justice from term to term because they are updated as opinions are released. For our purposes, we average the ideological scores of each justice who was on the Court in a given term. 
 
 ```{r}
 sumMQ <- justices %>%
@@ -244,11 +255,180 @@ ggplot(justices, aes(x=term)) +
 dat <- inner_join(dat, sumMQ[,c(1:2)], by="term")
 ```
 
+# Text Cleaning
+
+We remove the HTML tags from the case text.
+
+```{r}
+dat$facts <- gsub("<[^<>]*>", "", dat$facts)
+dat$facts <- gsub("\t", "", dat$facts, fixed = TRUE)
+dat$facts <- gsub("\n", "", dat$facts, fixed = TRUE)
+dat$facts <- gsub("&#82[0-9]{2};", "", dat$facts)
+```
+
+We convert the facts into a corpus, use tm_map() to clean, and create a term-document matrix.
+
+```{r}
+# creating a corpus
+corpus <- Corpus(VectorSource(dat$facts))
+
+# stem using porter algorithm
+corpus <- tm_map(corpus, stemDocument)
+
+# remove uppercase
+corpus <- tm_map(corpus, tolower)
+
+# remove stop words
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# remove extra white space
+corpus <- tm_map(corpus, stripWhitespace)
+
+# remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# remove stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+
+# remove overly sparse (less than 1% of docs) and overly common (more than 80% of docs)
+#ndocs <- length(corpus)
+# ignore overly sparse terms (appearing in less than 1% of the documents)
+#minDocFreq <- ndocs * 0.01
+# ignore overly common terms (appearing in more than 80% of the documents)
+#maxDocFreq <- ndocs * 0.8
+#tdm <- TermDocumentMatrix(corpus, control = list(bounds = list(global = c(minDocFreq, maxDocFreq))))
+
+# creating a term document matrix
+tdm <- TermDocumentMatrix(corpus)
+```
+
 # Most Frequent Words (Kelly)
 
-From Pset1
+## Across Entire Corpus
 
-Most frequent words across corpus, most frequent words across guilty versus not guilty, words with highest correlation
+```{r}
+m <- as.matrix(tdm)
+# reorganizing the matrix to get the most common words
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 20)
+
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(2, "Paired"))
+
+barplot(d[1:10,]$freq, las = 2, names.arg = d[1:10,]$word,
+        col ="lightblue", main ="Most frequent words",
+        ylab = "Word frequencies")
+```
+
+## By Decade
+
+We track the 10 most common words by decade from the 1960s to the 2010s.
+
+```{r}
+mostfreqwords <- d[1:10, 1]
+
+dec60 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 1970 & dat$term >= 1960)]))
+v_60 <- sort(rowSums(dec60),decreasing=TRUE)
+d_60 <- data.frame(word = names(v_60),freq=v_60)
+
+dec70 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 1980 & dat$term >= 1970)]))
+v_70 <- sort(rowSums(dec70),decreasing=TRUE)
+d_70 <- data.frame(word = names(v_70),freq=v_70)
+
+dec80 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 1990 & dat$term >= 1980)]))
+v_80 <- sort(rowSums(dec80),decreasing=TRUE)
+d_80 <- data.frame(word = names(v_80),freq=v_80)
+
+dec90 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 2000 & dat$term >= 1990)]))
+v_90 <- sort(rowSums(dec90),decreasing=TRUE)
+d_90 <- data.frame(word = names(v_90),freq=v_90)
+
+dec00 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 2010 & dat$term >= 2000)]))
+v_00 <- sort(rowSums(dec00),decreasing=TRUE)
+d_00 <- data.frame(word = names(v_00),freq=v_00)
+
+dec10 <- as.matrix(TermDocumentMatrix(corpus[which(dat$term < 2020 & dat$term >= 2010)]))
+v_10 <- sort(rowSums(dec10),decreasing=TRUE)
+d_10 <- data.frame(word = names(v_10),freq=v_10)
+
+# merge all data frames together
+decade_list <- list(d_70, d_80, d_90, d_00, d_10)      
+decades <- decade_list %>% reduce(full_join, by="word")
+names(decades) <- c("word", "1970s", "1980s", "1990s", "2000s", "2010s")
+
+# calculate relative frequencies by dividing by number of cases
+decades_relative <- decades
+decades_relative$`1970s` <- decades$`1970s` / sum(na.omit(decades$`1970s`))
+decades_relative$`1980s` <- decades$`1980s` / sum(na.omit(decades$`1980s`))
+decades_relative$`1990s` <- decades$`1990s` / sum(na.omit(decades$`1990s`))
+decades_relative$`2000s` <- decades$`2000s` / sum(na.omit(decades$`2000s`))
+decades_relative$`2010s` <- decades$`2010s` / sum(na.omit(decades$`2010s`))
+
+# most frequent
+decades_relative_top <- decades_relative %>%
+  filter(word %in% mostfreqwords) %>%
+  pivot_longer(cols = c(2:6)) %>%
+  mutate(name = as.numeric(substr(name, 1, 4))) %>%
+  rename(year = name,
+         proportion = value)
+
+ggplot(decades_relative_top, aes(x=year, y=proportion, group=word, color = word)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  xlab("Term") +
+  scale_x_continuous(breaks=seq(1970, 2020, 10)) +
+  ylab("Frequency of Word") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+```
+
+## By Issue Area
+
+We choose to examine the top 3 issue areas: Civil Rights, Criminal Procedure, and Economic Activity.
+
+```{r}
+civilRights <- as.matrix(TermDocumentMatrix(corpus[which(dat$issue_area == "Civil Rights")]))
+v_cr <- sort(rowSums(civilRights),decreasing=TRUE)
+d_cr <- data.frame(word = names(v_cr),freq=v_cr)
+
+barplot(d_cr[1:10,]$freq, las = 2, names.arg = d_cr[1:10,]$word,
+        col ="lightblue", main ="Most Frequent Words: Civil Rights",
+        ylab = "Word frequencies")
+
+
+criminalProcedure <- as.matrix(TermDocumentMatrix(corpus[which(dat$issue_area == "Criminal Procedure")]))
+v_cp <- sort(rowSums(criminalProcedure),decreasing=TRUE)
+d_cp <- data.frame(word = names(v_cp),freq=v_cp)
+
+
+barplot(d_cp[1:10,]$freq, las = 2, names.arg = d_cp[1:10,]$word,
+        col ="lightblue", main ="Most Frequent Words: Criminal Procedure",
+        ylab = "Word frequencies")
+
+
+economicActivity <- as.matrix(TermDocumentMatrix(corpus[which(dat$issue_area == "Economic Activity")]))
+v_ea <- sort(rowSums(economicActivity),decreasing=TRUE)
+d_ea <- data.frame(word = names(v_ea),freq=v_ea)
+
+
+barplot(d_ea[1:10,]$freq, las = 2, names.arg = d_ea[1:10,]$word,
+        col ="lightblue", main ="Most Frequent Words: Economic Activity",
+        ylab = "Word frequencies")
+```
 
 # Topic Modeling (Numi)
 
