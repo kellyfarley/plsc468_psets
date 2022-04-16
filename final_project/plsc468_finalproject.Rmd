@@ -41,11 +41,14 @@ set.seed(1005)
 ```
 
 ```{r}
-# data source: https://github.com/smitp415/CSCI_544_Final_Project
+# court data source: https://github.com/smitp415/CSCI_544_Final_Project
 
 raw <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_Project/main/clean_data.csv")) #
 
 dat <- raw
+
+# justice data source: https://mqscores.lsa.umich.edu/measures.php
+justices <- read.csv("final_project/justices.csv")
 ```
 
 # Data Structure
@@ -212,83 +215,26 @@ ggplot(dat, aes(x=issue_area)) +
 
 We note a variety of issue areas, particularly Civil Rights, Criminal Procedure, and Economic Activity.
 
-https://mqscores.lsa.umich.edu/measures.php dataset of justice leanings 1937-2020 by justice with the year the justice serves...slight issue bc a few years have over 9 justices (times of switchover), but our model simply will just not deal with this... lol
-
-# Most Frequent Words
-
-Copy from Pset 1
-Most frequent words across corpus, most frequent words across guilty versus not guilty, words with highest correlation
-
-## Analysis
-
-*What can this tell us about differences btwn guilty and not guilty verdicts?*
-
-## Future Suggestions
-
-# Verdict Prediction
-
-Copy from Pset 2
-Build test, training, prediction
-Choose stopword, non-stopword, fighting words, Bayesian method
-
-First, we break up our document term matrix into two separate dtm's: stop words (stop.dtm, for use in 1a) and non-stop words (non.dtm, for use in 1b). We use the stop words from the stopword package.
+Ggiven the large influence the ideological leanings of individual justices is thought to have over court opinions, w combine our main dataset about SCOTUS court cases with another dataset about the Martin-Quinn scores of the justices. A more negative Martin-Quinn score indicates a more liberal record, while a more positive Martin-Quinn score indicates a more conservative record. Martin-Quinn scores may change for a justice from term to term because they are updated as opinions are released. For our purposes, we average the ideological scores of each justice who was on the Court in a given term. 
 
 ```{r}
-# using stop words from stopword() package
-stops <- stopwords(kind = "en")
+meanMQ <- justices %>%
+  group_by(term) %>%
+  summarize(mean_mq = mean(post_mn, na.rm=TRUE))
 
-# note apostrophes are not removed in stops, but are in our texts
-stops <- c(gsub(stops, pattern="[']", replace=''))
-
-# make corpus
-texts=VCorpus(VectorSource(dat$facts))
-
-# make dtm
-dtm = as.matrix(DocumentTermMatrix(texts))
-
-# remove non stop words
-
-non.stops=array(TRUE,ncol(dtm))
-
-stops=sort(stops)
-
-col.names=colnames(dtm)
-for(j in 1:length(stops)){
-	ik=which(stops[j]==col.names)
-	if(length(ik)>0){
-		non.stops[ik]=F
-	}
-}
-
-non.dtm  = dtm[,non.stops] # non-stop words
-stop.dtm = dtm[,!non.stops] # stop words
+dat <- inner_join(dat, meanMQ, by="term")
 ```
 
-Now, we work with the stop words dtm to make training (50% of known papers), testing (other 50% of known papers), and prediction (all disputed papers) sets. Note that we used our discretion on this training/testing proportion and have decided to split the known papers exactly in half due to overfitting and validation tradeoffs. We make this into the function splitSets() that can be used elsewhere in the pset and also, due to function scope, ensure that all variables needed later on (x.train, y.train, x.test, y.test, x.pred) are stored as global variables using the operator <<-.
+# Most Frequent Words (Kelly)
 
-```{r eval=F}
-# function to split into testing, training, prediction sets
-splitSets <- function(dtm){
-  # define training, testing, and prediction sets
-  
-  # randomly assign known papers to training (50%) and testing (50%)
-  N=nrow(dtm)
-  s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
-  
-  # train with 1/2 of known
-  x.train <<- dtm[which(s.vec==1),]
-  y.train <<- dtm$classes[which(s.vec==1)]
-  
-  # test with other 1/2 of known
-  x.test <<- dtm[which(s.vec==2),]
-  y.test <<- knownpapers$classes[which(s.vec==2)]
-}
+From Pset1
 
-splitSets(stop.dtm)
-```
+Most frequent words across corpus, most frequent words across guilty versus not guilty, words with highest correlation
 
-## Analysis
+# Topic Modeling (Numi)
 
-*Are we able to predict guilty vs not guilty verdicts? What's the best method for prediction?*
+From Pset3
 
-## Future Suggestions
+# Lasso, Ridge, and Elastic Net Regression (Chelsea)
+
+From Pset4
