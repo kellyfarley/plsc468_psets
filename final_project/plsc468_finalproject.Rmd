@@ -42,18 +42,13 @@ set.seed(1005)
 
 ```{r}
 # data source: https://github.com/smitp415/CSCI_544_Final_Project
-# has multiple data sets...
 
-#all <- fromJSON(file="/Users/kellyfarley/Desktop/oyez_pretty.json")
-#task1 <- py_load_object("/Users/kellyfarley/Desktop/task1_data.pkl", pickle = "pickle")
-#class0 <- py_load_object("/Users/kellyfarley/Desktop/class0.pkl", pickle = "pickle")
-#class1 <- py_load_object("/Users/kellyfarley/Desktop/class1.pkl", pickle = "pickle")
-raw <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_Project/main/clean_data.csv")) # i think this is the best one to be using because it has the most information
+raw <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_Project/main/clean_data.csv")) #
 
 dat <- raw
 ```
 
-# Clean Data
+# Data Structure
 
 ```{r}
 dim(dat)
@@ -62,45 +57,162 @@ dim(dat)
 We note 16 variables recorded for 3,303 SCOTUS cases. Only some of these variables are relevant for our analysis:
 
 ```{r}
-clean <- dat %>%
-  select(name, href, term) %>%
+dat <- dat %>%
+  select(name, href, term, facts, majority_vote, minority_vote, decision_type, disposition, issue_area) %>%
   mutate(term = case_when(term == "1789-1850" ~ round(mean(c(1789, 1850)), 0),
                    term == "1850-1900" ~ round(mean(c(1850, 1900)), 0),
                    term == "1900-1940" ~ round(mean(c(1900, 1940)), 0),
                    term == "1940-1955" ~ round(mean(c(1940, 1955)), 0),
                    TRUE ~ as.numeric(term))) %>%
-  mutate(term = as.numeric(term))
+  mutate(term = as.numeric(term),
+         decision_type = as.factor(decision_type),
+         disposition = as.factor(disposition),
+         issue_area = as.factor(issue_area))
 
-load("/Users/kellyfarley/Desktop/mqData2020.Rda")
+load("final_project/mqData2020.Rda")
 
 ```
 
+-name (character): The name of the case, e.g. "Roe v. Wade."
+-href (character): The URL link to the case in the Oyez API, for ease of reference
 -term (numeric): Since 1955, the term of the Supreme Court begins from October of the given year and extends til October of the following year. Previously, the term of the court has been classified into broader terms: 1789-1850, 1850-1900, 1900-1940, 1940-1955. For our analysis, we want to consider "term" as a continuous variable. Therefore, the ranged values will be replaced with the year in the middle of the range. While it would be preferred to have the actual year of the decision, we note that very few cases take place before 1955: only 59 of the over 3k cases.
--first_party (character): This is the first party in the case name.
--second_party (character): This is the second party in the case name.
--facts: This is the raw text of the case facts and needs to be cleaned for future analysis.
--first_party_winner (logical): This variable indicates whether the first party won the case and is either TRUE or FALSE. We manipulate this variable to be equal to the name of the party who won the case.
--issue_area (factor): There are 14 possible issue areas a case can cover: "Attorneys," "Civil Rights," "Criminal Procedure," "Due Process," "Economic Activity," "Federal Taxation," "Federalism," "First Amendment," "Interstate Relations," "Judicial Power," "Miscellaneous," "Privacy," "Private Action," and "Unions." NA values are also possible.
+-facts (character): This is the raw text of the case facts and needs to be cleaned for future analysis.
+-majority_vote (numeric): The number of justices who agreed to the case's disposition
+-minority_vote (numeric): The number of justices who did not agree to the case's disposition
+-decision_type (factor): A phrase indicating the court's level of agreement on the case's outcome, e.g. "majority opinion," or "dismissal - moot"
+-disposition (factor): A phrase indicating the court's judgement on the status of the case, e.g. "reversed" or "affirmed"
+-issue_area (factor): A phrase indicating the topic of the case, e.g. "Civil Rights"
 
-We keep the "name" and "href" columns for ease of referral, though they will not be used for any statistical analysis.
+To ensure the dataset variables are as expected, we investigate the range of each variable.
 
-https://www.supremecourt.gov/about/members_text.aspx justices on the court, could use as a proxy for conservative vs liberal, Democratic vs Republican appointed (may not hold up all of the time; president nominates and senate confirms; control of Senate)
-https://en.wikipedia.org/wiki/Ideological_leanings_of_United_States_Supreme_Court_justices ideological leanings of court
+```{r}
+sum(duplicated(dat))
+```
 
-who is the party? person or company?
+We note no duplicated entries in the dataset.
 
-model can be useful for controversial cases - don't always bring a case to the court because you want 1) a good set of facts, 2) a good composition of the court, because you don't want to set a bad precedent
+```{r}
+range(dat$term)
 
-take into account overall composition of court: # dem appointed, # rep appointed (would be even better to also know the Senate and know the individual justice's liberal vs conservative tendecies but prob not possible at this exact time)
+ggplot(dat, aes(x=term)) +
+  geom_histogram(fill="#8D9DD5", color="#E3EBFF") +
+  theme_minimal() +
+  xlab("Term") +
+  ylab("Count") +
+  scale_x_continuous(breaks=seq(1800, 2100, 50)) +
+  scale_y_continuous(breaks=seq(0, 350, 100), limits=c(0, 250), expand=c(0,0)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 15),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+
+sum(dat$term < 1950)
+
+dat <- dat %>%
+  filter(term >= 1950)
+```
+
+The terms from the dataset range from 1820 to 2020. We note the vast majority of cases in the dataset are from after 1950: only 59 out of the over 3k cases are from earlier. Therefore, we decide to cutoff the dataset at cases in 1950 or later, with the most recent cases being from the term ending in October of 2021.
+
+```{r}
+votes <- dat %>%
+  select(majority_vote, minority_vote)
+
+votes <- gather(votes, condition, measurement)
+
+ggplot(votes, aes(x=measurement, fill=condition)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Justices") +
+  ylab("Count") +
+  scale_x_continuous(breaks=seq(0, 9, 1)) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 15),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+```
+
+We note that majority vote opinions generally occur when 5-9 justices agree on the opinion, leaving a minority of 0-4 justices dissenting. We also note that the most common condition is consensus, when 9 of the justices are on the majority vote and 0 justices are on the minority vote. 
+
+```{r}
+table(dat$majority_vote)
+```
+
+```{r}
+ggplot(dat, aes(x=decision_type)) +
+  geom_bar(fill="#8D9DD5", color="#E3EBFF") +
+  theme_minimal() +
+  xlab("Decision Type") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+  ylab("Count") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+```
+We note the vast majority of the Court's decisions are majority opinions, where more than half of the Court agrees on the decision and the reasoning. A plurality opinion has the greatest number of votes but not necessarily a majority and is not binding. These opinions typically have 1 justice as the author. In contrast, per curiam opinions do not identify an author and are opinions of the Court.
+
+```{r}
+ggplot(dat, aes(x=disposition)) +
+  geom_bar(fill="#8D9DD5", color="#E3EBFF") +
+  theme_minimal() +
+  xlab("Disposition") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+  ylab("Count") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+```
+
+We note a variety of decision types: interestingly, the court affirms a decision about as often as it reverses/remands a decision.
+
+```{r}
+ggplot(dat, aes(x=issue_area)) +
+  geom_bar(fill="#8D9DD5", color="#E3EBFF") +
+  theme_minimal() +
+  xlab("Issue Area") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+  ylab("Count") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+```
+
+We note a variety of issue areas, particularly Civil Rights, Criminal Procedure, and Economic Activity.
 
 https://mqscores.lsa.umich.edu/measures.php dataset of justice leanings 1937-2020 by justice with the year the justice serves...slight issue bc a few years have over 9 justices (times of switchover), but our model simply will just not deal with this... lol
-
-# Data Structure
-
-Dimensions
-Variables
-Years cases are from
-Guilty / not guilty verdicts
 
 # Most Frequent Words
 

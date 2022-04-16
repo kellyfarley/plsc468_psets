@@ -1,0 +1,60 @@
+---
+title: "PLSC 468 Pset 4"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "4/29/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+# wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+library(tidyverse)
+```
+
+Setting the seed for future randomization:
+
+```{r}
+set.seed(1005)
+```
+
+Loading platforms from .rda file:
+
+```{r}
+load(file = "pset4/platforms.Rdata")
+```
+
+Goal: to use the lasso, ridge, and elastic net to classify the correct party (D or R) for 478 U.S. state party platforms
+
+# 1a: Ridge Regression Model
+
+**Using glmnet(), estimate a ridge regression model (alpha = 0) to predict party in a training set. In the model, include all 5056 words and a shrinkage parameter lambda = 5056/478.**
+
+**Using a separate testing set, assess how many platforms your ridge model correctly classified. What is the out-of-sample accuracy rate?**
+
+# 1b: Lasso Regression Model
+
+**Using glmnet(), estimate a lasso regression model (alpha = 1) to predict party in a training set. In the model, include all 5056 words and a shrinkage parameter lambda = 5056/478.**
+
+**Using a separate testing set, assess how many platforms your lasso model correctly classified. What is the out-of-sample accuracy rate?**
+
+# 1c: Elastic Net
+
+**Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lamba from 0.5-10.5 by increments of 0.5.**
+
+**Identify the alpha, lambda combination that maximizes prediction accuracy in training set.**
+
+**Use chosen parameters to classify platforms in a testing set. How many platforms did your elastic net correctly classify? What is the out-of-sample accuracy rate?**
