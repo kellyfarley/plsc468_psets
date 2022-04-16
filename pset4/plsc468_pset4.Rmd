@@ -55,6 +55,44 @@ Goal: to use the lasso, ridge, and elastic net to classify the correct party (D 
 
 **Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lamba from 0.5-10.5 by increments of 0.5.**
 
+```{r}
+# initial tuning range
+k=10
+alpha=seq(from=0,to=1,by=0.1)
+lambda=seq(from=0.5,to=10.5,by=0.5)
+
+sumMSE=matrix(NA,length(alpha),length(lambda))
+
+for(i in 1:length(alpha)){
+  oo=cv.glmnet(nfolds=3,x=x.train, y=y.train, family=c("gaussian"),nlambda=length(lambda),
+  	alpha=alpha[i],lambda=lambda)
+  if(length(oo$cvm)==length(sumMSE[i,])){
+  	sumMSE[i,]=oo$cvm
+  }
+}
+
+# identifiying alpha and lamda that minimizes MSE
+for(i in 1:length(alpha)){
+  if(length(which(sumMSE[i,]==min(sumMSE)))>0){break}
+}
+
+alpha[i]
+lambda[which(sumMSE[i,]==min(sumMSE))]
+
+# run final optimized model
+oo=glmnet(x=x.train, y=y.train, family=c("gaussian"),
+  	alpha=alpha[i],lambda=lambda[which(sumMSE[i,]==min(sumMSE))])
+
+# train
+prd.train=predict(oo,x.train)
+tau=(min(prd.train[y.train==1])+max(prd.train[y.train==0]))/2
+table(y.train,as.numeric(prd.train>tau))
+
+# test
+prd.test=predict(oo,x.test)
+table(y.test,as.numeric(prd.test>tau))
+```
+
 **Identify the alpha, lambda combination that maximizes prediction accuracy in training set.**
 
 **Use chosen parameters to classify platforms in a testing set. How many platforms did your elastic net correctly classify? What is the out-of-sample accuracy rate?**
