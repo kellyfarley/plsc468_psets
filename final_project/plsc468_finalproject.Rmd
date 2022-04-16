@@ -71,9 +71,6 @@ dat <- dat %>%
          decision_type = as.factor(decision_type),
          disposition = as.factor(disposition),
          issue_area = as.factor(issue_area))
-
-load("final_project/mqData2020.Rda")
-
 ```
 
 -name (character): The name of the case, e.g. "Roe v. Wade."
@@ -115,10 +112,10 @@ ggplot(dat, aes(x=term)) +
     axis.title.x = element_text(face = "bold"),
   )
 
-sum(dat$term < 1950)
+sum(dat$term <= 1955)
 
 dat <- dat %>%
-  filter(term >= 1950)
+  filter(term > 1955)
 ```
 
 The terms from the dataset range from 1820 to 2020. We note the vast majority of cases in the dataset are from after 1950: only 59 out of the over 3k cases are from earlier. Therefore, we decide to cutoff the dataset at cases in 1950 or later, with the most recent cases being from the term ending in October of 2021.
@@ -218,11 +215,33 @@ We note a variety of issue areas, particularly Civil Rights, Criminal Procedure,
 Ggiven the large influence the ideological leanings of individual justices is thought to have over court opinions, w combine our main dataset about SCOTUS court cases with another dataset about the Martin-Quinn scores of the justices. A more negative Martin-Quinn score indicates a more liberal record, while a more positive Martin-Quinn score indicates a more conservative record. Martin-Quinn scores may change for a justice from term to term because they are updated as opinions are released. For our purposes, we average the ideological scores of each justice who was on the Court in a given term. 
 
 ```{r}
-meanMQ <- justices %>%
+sumMQ <- justices %>%
   group_by(term) %>%
-  summarize(mean_mq = mean(post_mn, na.rm=TRUE))
+  summarize(median_mq = median(post_mn, na.rm=TRUE),
+            mean_mq = mean(post_mn, na.rm=TRUE))
 
-dat <- inner_join(dat, meanMQ, by="term")
+ggplot(justices, aes(x=term)) +
+  geom_line(aes(y=post_mn, group=justice)) +
+  geom_line(data = sumMQ, aes(y=median_mq), color="red") +
+    geom_line(data = sumMQ, aes(y=mean_mq), color="blue") +
+  theme_minimal() +
+  xlab("Term") +
+  scale_x_continuous(breaks=seq(1950, 2050, 10)) +
+  ylab("Martin-Quinn Score by Justice") +
+  annotate(geom = "text", x = 2007, y = 1, label = "Median", color = "red", size = 3) +
+  annotate(geom = "text", x = 2007, y = -0.4, label = "Median", color = "blue", size = 3) +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+
+dat <- inner_join(dat, sumMQ[,c(1:2)], by="term")
 ```
 
 # Most Frequent Words (Kelly)
