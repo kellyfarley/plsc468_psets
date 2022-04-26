@@ -153,6 +153,32 @@ ggplot(votes, aes(x=measurement, fill=condition)) +
     axis.title.y = element_text(face = "bold"),
     axis.title.x = element_text(face = "bold"),
   )
+
+sumMajority <- dat %>%
+  group_by(term) %>%
+  summarize(median_majority = median(majority_vote, na.rm=TRUE),
+            mean_majority = mean(majority_vote, na.rm=TRUE))
+
+ggplot(dat, aes(x=term, y=majority_vote)) +
+  geom_point(position = "jitter", alpha = .2) +
+  theme_minimal() +
+  xlab("Term") +
+  scale_x_continuous(breaks=seq(1950, 2050, 10)) +
+  geom_line(data = sumMajority, aes(y=median_majority), color="red") +
+  geom_line(data = sumMajority, aes(y=mean_majority), color="blue") +
+  annotate(geom = "label", x = 1960, y = 8.4, label = "Median", color = "red", size = 3) +
+  annotate(geom = "label", x = 1960, y = 7.5, label = "Mean", color = "blue", size = 3) +
+  ylab("Majority Votes") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
 ```
 
 We note that majority vote opinions generally occur when 5-9 justices agree on the opinion, leaving a minority of 0-4 justices dissenting. We also note that the most common condition is consensus, when 9 of the justices are on the majority vote and 0 justices are on the minority vote. 
@@ -198,6 +224,28 @@ ggplot(dat, aes(x=disposition)) +
     axis.title.y = element_text(face = "bold"),
     axis.title.x = element_text(face = "bold"),
   )
+
+affirmRemand <- dat %>%
+  filter(disposition == "affirmed" | disposition == "reversed") %>%
+  group_by(disposition, term) %>%
+  summarise(count = n())
+
+ggplot(affirmRemand, aes(x=term, y=count, group=disposition, color=disposition)) +
+  geom_line()+
+  theme_minimal() +
+  xlab("Term") +
+  scale_x_continuous(breaks=seq(1950, 2050, 10)) +
+  ylab("Count") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
 ```
 
 We note a variety of decision types: interestingly, the court affirms a decision about as often as it reverses/remands a decision.
@@ -208,6 +256,27 @@ ggplot(dat, aes(x=issue_area)) +
   theme_minimal() +
   xlab("Issue Area") +
   scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+  ylab("Count") +
+  theme(
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    text = element_text(family = "Palatino", size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+  )
+
+issueArea <- dat %>%
+  group_by(issue_area, term) %>%
+  summarise(count = n())
+
+ggplot(issueArea, aes(x=term, y=count, group=issue_area, color=issue_area)) +
+  geom_line()+
+  theme_minimal() +
+  xlab("Term") +
+  scale_x_continuous(breaks=seq(1950, 2050, 10)) +
   ylab("Count") +
   theme(
     axis.line = element_line(colour = "black"),
