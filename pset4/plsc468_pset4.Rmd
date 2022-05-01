@@ -20,7 +20,11 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALS
 wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
 # wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
+```
 
+
+
+```{r, include=FALSE}
 # load libraries
 library(tidyverse)
 library(broom)
@@ -37,6 +41,7 @@ Loading platforms from .rda file:
 
 ```{r}
 load(file = "pset4/platforms.Rdata")
+# load(file = "platforms.Rdata")
 ```
 
 Goal: to use the lasso, ridge, and elastic net to classify the correct party (D or R) for 478 U.S. state party platforms
@@ -144,14 +149,25 @@ oo=glmnet(x=x.train, y=y.train, family=c("gaussian"),
 
 # train
 prd.train=predict(oo,x.train)
-tau=(min(prd.train[y.train==1])+max(prd.train[y.train==0]))/2
+tau=(min(prd.train[y.train==-1])+max(prd.train[y.train==1]))/2
 table(y.train,as.numeric(prd.train>tau))
 
 # test
 prd.test=predict(oo,x.test)
 table(y.test,as.numeric(prd.test>tau))
+
+# test
+test_1b <- lasso_reg$a0+x.test%*%lasso_reg$beta[,1]
+tau=(min(test_1b[y.test==-1])+max(test_1b[y.test==1]))/2
+
+y.pred <- as.numeric(prd.test>tau)
+y.pred[y.pred == 0] <- -1
+
+# calculate accuracy
+sub.vector <- y.pred - y.test # 0's indicate correct classification
+accuracy <- sum(sub.vector == 0) / length(sub.vector)
 ```
 
-**Identify the alpha, lambda combination that maximizes prediction accuracy in training set.**
+Alpha is maximized at zero, meaning that ridge shrinkage is the most effective for our data. Lambda is maximized at 6. 
 
-**Use chosen parameters to classify platforms in a testing set. How many platforms did your elastic net correctly classify? What is the out-of-sample accuracy rate?**
+In the test set, no documents are classified incorrectly. In the training set, 5 documents are classified incorrectly and 236 documents are classified correctly, leading to an out-of-sample accuracy rate of 97.9%. Elastic net performs the best out of the three models.  
