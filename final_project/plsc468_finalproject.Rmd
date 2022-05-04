@@ -74,6 +74,9 @@ dat <- dat %>%
          decision_type = as.factor(decision_type),
          disposition = as.factor(disposition),
          issue_area = as.factor(issue_area))
+
+dat <- dat %>%
+  na.omit()
 ```
 
 -name (character): The name of the case, e.g. "Roe v. Wade."

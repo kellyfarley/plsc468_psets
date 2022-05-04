@@ -1,0 +1,265 @@
+---
+title: "PLSC 468 Final Project"
+author: "Kelly Farley, Numi Katz, and Chelsea Wang"
+date: "4/6/2022"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # clear global environ
+
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+
+# load libraries
+library(e1071)
+library(stringr)
+library(tm)
+library(tidyverse)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+library(lda)
+library(topicmodels) 
+library(stm)
+#library(reticulate)
+#library(rjson)
+#library(jsonlite)
+#py_install("pandas")
+```
+
+# Load Data
+
+Setting the seed for future randomization:
+
+```{r}
+set.seed(1005)
+```
+
+```{r}
+# court data source: https://github.com/smitp415/CSCI_544_Final_Project
+
+raw <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_Project/main/clean_data.csv")) #
+
+dat <- raw
+
+# justice data source: https://mqscores.lsa.umich.edu/measures.php
+justices <- read.csv("justices.csv")
+```
+
+# Data Structure
+
+```{r}
+dim(dat)
+```
+
+We note 16 variables recorded for 3,303 SCOTUS cases. Only some of these variables are relevant for our analysis:
+
+```{r}
+dat <- dat %>%
+  select(name, href, term, facts, majority_vote, minority_vote, decision_type, disposition, issue_area) %>%
+  mutate(term = case_when(term == "1789-1850" ~ round(mean(c(1789, 1850)), 0),
+                   term == "1850-1900" ~ round(mean(c(1850, 1900)), 0),
+                   term == "1900-1940" ~ round(mean(c(1900, 1940)), 0),
+                   term == "1940-1955" ~ round(mean(c(1940, 1955)), 0),
+                   TRUE ~ as.numeric(term))) %>%
+  mutate(term = as.numeric(term),
+         decision_type = as.factor(decision_type),
+         disposition = as.factor(disposition),
+         issue_area = as.factor(issue_area))
+```
+
+-name (character): The name of the case, e.g. "Roe v. Wade."
+
+-href (character): The URL link to the case in the Oyez API, for ease of reference
+
+-term (numeric): Since 1955, the term of the Supreme Court begins from October of the given year and extends til October of the following year. Previously, the term of the court has been classified into broader terms: 1789-1850, 1850-1900, 1900-1940, 1940-1955. For our analysis, we want to consider "term" as a continuous variable. Therefore, the ranged values will be replaced with the year in the middle of the range. While it would be preferred to have the actual year of the decision, we note that very few cases take place before 1955: only 59 of the over 3k cases.
+
+-facts (character): This is the raw text of the case facts and needs to be cleaned for future analysis.
+
+-majority_vote (numeric): The number of justices who agreed to the case's disposition
+
+-minority_vote (numeric): The number of justices who did not agree to the case's disposition
+
+-decision_type (factor): A phrase indicating the court's level of agreement on the case's outcome, e.g. "majority opinion," or "dismissal - moot"
+
+-disposition (factor): A phrase indicating the court's judgement on the status of the case, e.g. "reversed" or "affirmed"
+
+-issue_area (factor): A phrase indicating the topic of the case, e.g. "Civil Rights"
+
+To ensure the dataset variables are as expected, we investigate the range of each variable.
+
+# Text Cleaning
+
+We remove the HTML tags from the case text.
+
+```{r}
+dat$facts <- gsub("<[^<>]*>", "", dat$facts)
+dat$facts <- gsub("\t", "", dat$facts, fixed = TRUE)
+dat$facts <- gsub("\n", "", dat$facts, fixed = TRUE)
+dat$facts <- gsub("&#82[0-9]{2};", "", dat$facts)
+```
+
+We convert the facts into a corpus, use tm_map() to clean, and create a term-document matrix.
+
+```{r}
+# creating a corpus
+corpus <- Corpus(VectorSource(dat$facts))
+
+# stem using porter algorithm
+corpus <- tm_map(corpus, stemDocument)
+
+# remove uppercase
+corpus <- tm_map(corpus, tolower)
+
+# remove stop words
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# remove extra white space
+corpus <- tm_map(corpus, stripWhitespace)
+
+# remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# remove stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+
+# remove overly sparse (less than 1% of docs) and overly common (more than 80% of docs)
+#ndocs <- length(corpus)
+# ignore overly sparse terms (appearing in less than 1% of the documents)
+#minDocFreq <- ndocs * 0.01
+# ignore overly common terms (appearing in more than 80% of the documents)
+#maxDocFreq <- ndocs * 0.8
+#tdm <- TermDocumentMatrix(corpus, control = list(bounds = list(global = c(minDocFreq, maxDocFreq))))
+
+# creating a term document matrix
+tdm <- TermDocumentMatrix(corpus)
+```
+
+# Most Frequent Words (Kelly)
+
+
+# Topic Modeling (Numi)
+Because we are interesting in the variation in how different words, issues, are linked to the level of Supreme Court disagreement, we now turn to structural topic models. We begin with unstructured LDA models. 
+
+#LDA 
+```{r}
+txts=dat$facts
+docs=lexicalize(txts)
+
+#processing text for lda analysis 
+vocab = docs[[2]]
+result=list()
+
+#preset parameters for lda() models
+k=5
+alpha = 1.0
+eta = 0.1
+params = sample(c(-1, 1), k, replace=TRUE)
+
+#running the model!
+test=lda.collapsed.gibbs.sampler(docs[[1]], 		
+	k,  			
+	vocab,		
+	100,  
+	alpha = alpha, 
+	eta = eta,   
+	compute.log.likelihood=TRUE
+)
+```
+
+Top Words
+```{r}
+lda_results <- top.topic.words(test$topics,10)
+as.data.frame(lda_results)
+```
+
+```{r}
+result_issue=slda.em(documents=docs[[1]],
+		K=5,
+		vocab=vocab,
+		num.e.iterations=10,
+		num.m.iterations=4,
+		alpha=alpha, 
+		eta=eta,
+		annotations=dat$issue_area,
+		params,
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, 
+		method="sLDA"
+)
+```
+
+
+
+#STM 
+Our first task is determining the number of topics emerge in our dataset. To do so, we first prepare the Supreme Court Corpus for analysis. 
+```{r}
+txts=dat$facts
+temp_stm = textProcessor(documents=dat$txts,metadata=dat[,1:9])
+outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta)
+```
+
+
+
+```{r}
+
+
+ads$txts=txts
+temp_stm = textProcessor(documents=ads$txts,metadata=ads[,2:7])
+outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta)
+```
+
+## Determining *K* value
+
+```{r}
+# creating a tdm of documents
+temp = Corpus(VectorSource(outs_stm$documents))
+tdm = DocumentTermMatrix(temp)
+
+# calculating lda tuning metrics - big picture overview
+metrics <- FindTopicsNumber(
+  tdm,
+  topics = seq(from = 2, to = 100, by = 20),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 77),
+  mc.cores = 2L,
+  verbose = TRUE
+)
+
+FindTopicsNumber_plot(metrics)
+
+# calculating lda tuning metrics - 5-30
+
+metrics_final <- FindTopicsNumber(
+  tdm,
+  topics = seq(from = 5, to = 30, by = 1),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 77),
+  mc.cores = 2L,
+  verbose = TRUE
+)
+
+FindTopicsNumber_plot(metrics_final)
+```
+
+
+# Lasso, Ridge, and Elastic Net Regression (Chelsea)
+
+From Pset4
