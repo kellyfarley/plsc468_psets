@@ -17,8 +17,7 @@ rm(list = ls()) # clear global environ
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
 
 # set working directory (change for each user)
-wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
-#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 
 # load libraries
@@ -77,6 +76,9 @@ dat <- dat %>%
          decision_type = as.factor(decision_type),
          disposition = as.factor(disposition),
          issue_area = as.factor(issue_area))
+
+dat <- dat %>%
+  na.omit()
 ```
 
 -name (character): The name of the case, e.g. "Roe v. Wade."
@@ -153,78 +155,23 @@ tdm <- TermDocumentMatrix(corpus)
 
 
 # Topic Modeling (Numi)
-Because we are interesting in the variation in how different words, issues, are linked to the level of Supreme Court disagreement, we now turn to structural topic models. We begin with unstructured LDA models. 
+Because we are interesting in the variation in how different words, issues, are linked to the level of Supreme Court disagreement, we now turn to structural topic models.
 
-#LDA 
+Our first task is determining the number of topics emerge in our dataset. To do so, we first prepare the Supreme Court Corpus for analysis. Since the LDA and STM functions rely on different text cleaning parameters, we prepare each according to its compatable cleaning method.
+
+#LDA Prep 
 ```{r}
 txts=dat$facts
 docs=lexicalize(txts)
-
-#processing text for lda analysis 
-vocab = docs[[2]]
-result=list()
-
-#preset parameters for lda() models
-k=5
-alpha = 1.0
-eta = 0.1
-params = sample(c(-1, 1), k, replace=TRUE)
-
-#running the model!
-test=lda.collapsed.gibbs.sampler(docs[[1]], 		
-	k,  			
-	vocab,		
-	100,  
-	alpha = alpha, 
-	eta = eta,   
-	compute.log.likelihood=TRUE
-)
 ```
 
-Top Words
+#STM Prep
 ```{r}
-lda_results <- top.topic.words(test$topics,10)
-as.data.frame(lda_results)
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:9])
+outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta)
 ```
 
-```{r}
-result_issue=slda.em(documents=docs[[1]],
-		K=5,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, 
-		eta=eta,
-		annotations=dat$issue_area,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-```
-
-
-
-#STM 
-Our first task is determining the number of topics emerge in our dataset. To do so, we first prepare the Supreme Court Corpus for analysis. 
-```{r}
-txts=dat$facts
-temp_stm = textProcessor(documents=dat$txts,metadata=dat[,1:9])
-outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta)
-```
-
-
-
-```{r}
-
-
-ads$txts=txts
-temp_stm = textProcessor(documents=ads$txts,metadata=ads[,2:7])
-outs_stm = prepDocuments(temp_stm$documents, temp_stm$vocab, temp_stm$meta)
-```
-
-## Determining *K* value
+Our next goal is determining the ideal number of topics for our models. In determining the value of k, we aim to minimize the Arun and CaoJuan metrics and maximize the Deveaud and Grifiths metrics. 
 
 ```{r}
 # creating a tdm of documents
@@ -234,7 +181,7 @@ tdm = DocumentTermMatrix(temp)
 # calculating lda tuning metrics - big picture overview
 metrics <- FindTopicsNumber(
   tdm,
-  topics = seq(from = 2, to = 100, by = 20),
+  topics = seq(from = 2, to = 200, by = 20),
   metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
   method = "Gibbs",
   control = list(seed = 77),
@@ -258,7 +205,117 @@ metrics_final <- FindTopicsNumber(
 
 FindTopicsNumber_plot(metrics_final)
 ```
+To do so, we first begin with a wide set of possible K values (2-100) to understand the broad pattern.It appears that the Arun, CaoJuan, and Deveaud metrics decrease over time while the Griffiths metric increases over time. 
 
+After confirming that there are no anomolous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergens in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
+
+```{r}
+k <- 12
+```
+
+
+*LDA* 
+First, we turn to LDA 
+
+```{r}
+#processing text for lda analysis 
+vocab = docs[[2]]
+result=list()
+
+#preset parameters for lda() models
+alpha = 1.0
+eta = 0.1
+params = sample(c(-1, 1), k, replace=TRUE)
+
+#running the model!
+test=lda.collapsed.gibbs.sampler(docs[[1]], 		
+	k,  			
+	vocab,		
+	100,  
+	alpha = alpha, 
+	eta = eta,   
+	compute.log.likelihood=TRUE
+)
+```
+Top Words
+```{r}
+lda_results <- top.topic.words(test$topics,10)
+as.data.frame(lda_results)
+```
+
+```{r}
+issue_results=slda.em(documents=docs[[1]],
+		K=k,
+		vocab=vocab,
+		num.e.iterations=10,
+		num.m.iterations=4,
+		alpha=alpha, 
+		eta=eta,
+		annotations=dat$issue_area,
+		params,
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, 
+		method="sLDA"
+)
+```
+Top Words
+```{r}
+top_issue <- top.topic.words(issue_results$topics,10)
+as.data.frame(lda_results)
+```
+
+```{r}
+issue_results=slda.em(documents=docs[[1]],
+		K=k,
+		vocab=vocab,
+		num.e.iterations=10,
+		num.m.iterations=4,
+		alpha=alpha, 
+		eta=eta,
+		annotations=dat$issue_area,
+		params,
+		variance=0.25,
+		lambda=1.0,
+		logistic=FALSE, 
+		method="sLDA"
+)
+```
+Top Words
+```{r}
+top_issue <- top.topic.words(issue_results$topics,10)
+as.data.frame(lda_results)
+```
+
+
+#STM 
+Next, we look to structural topic models (STM) to 
+
+```{r}
+stm_results = stm(documents=outs_stm$documents,
+                  vocab=outs_stm$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term,
+                  data=outs_stm$meta)
+```
+
+Top Words
+```{r}
+# view 3 top words associated with each topic
+plot(stm_results)
+```
+
+For this assignment, we are interested in collecting the top 10 words in each category.
+
+```{r}
+stm_results <- t(labelTopics(model=stm_results, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_results) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(stm_results) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_results)
+```
 
 # Lasso, Ridge, and Elastic Net Regression (Chelsea)
 
