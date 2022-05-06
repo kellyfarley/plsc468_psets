@@ -11,15 +11,20 @@ output:
     toc: yes
 ---
 
+```{r}
+# set working directory (change for each user)
+wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+knitr::opts_knit$set(root.dir = wd)
+```
+
+
 ```{r setup, include=FALSE}
 rm(list = ls()) # clear global environ
 
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
 
-# set working directory (change for each user)
-wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
-#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
-knitr::opts_knit$set(root.dir = wd)
+
 
 # load libraries
 library(e1071)
@@ -29,6 +34,8 @@ library(tidyverse)
 library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
+library(glmnet)
+library(caret)
 #library(reticulate)
 #library(rjson)
 #library(jsonlite)
@@ -51,7 +58,9 @@ raw <- read_csv(url("https://raw.githubusercontent.com/smitp415/CSCI_544_Final_P
 dat <- raw
 
 # justice data source: https://mqscores.lsa.umich.edu/measures.php
-justices <- read.csv("final_project/justices.csv")
+#justices <- read.csv("final_project/justices.csv")
+#chelsea code
+justices <- read.csv("justices.csv")
 ```
 
 # Data Structure
@@ -671,3 +680,204 @@ as.data.frame(stm_results)
 # Lasso, Ridge, and Elastic Net Regression (Chelsea)
 
 From Pset4
+
+Notes from Chelsea: I'm going to proceed w elastic net - it is computationally most expensive but I think it is useful in that it combines features of Lasso and Ridge - can optimize both alpha and lambda., change size of traning/test
+
+Things to try: just lasso or ridge, classifying rather than predicting the level of agreement
+
+
+Model 1: predicting the level of agreement (continuous)
+
+```{r}
+# subsetting to complete data and selecting variables
+# note: minority vote was also removed bc that perfectly predicts majority vote
+
+x <- na.omit(subset(dat, select = -c(name, href, minority_vote)))
+names(x)[1] <- "jterm"
+y <- x$majority_vote
+```
+
+```{r}
+# creating a corpus
+corpus <- Corpus(VectorSource(x$facts))
+
+# stem using porter algorithm
+corpus <- tm_map(corpus, stemDocument)
+
+# remove uppercase
+corpus <- tm_map(corpus, tolower)
+
+# remove stop words
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# remove extra white space
+corpus <- tm_map(corpus, stripWhitespace)
+
+# remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# remove stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+```
+
+```{r}
+# removing frequent words
+
+ndocs <- length(corpus)
+minDocFreq <- ndocs * 0.01
+maxDocFreq <- ndocs * 0.5 # 50% as upper - model was kind of struggling w higher bounds
+
+# creating a dtm 
+dtm <- DocumentTermMatrix(corpus, control = list(bounds = list(global = c(minDocFreq, maxDocFreq))))
+dtm.mat <- as.matrix(dtm)
+
+# combining dtm with other data
+x <- subset(x, select = -c(majority_vote, facts))
+x <- cbind(x, dtm.mat)
+```
+
+
+```{r}
+# split into test/training
+N=nrow(x)
+s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+  
+# train with 1/2 of known
+x.train <- x[which(s.vec==1),]
+y.train <- y[which(s.vec==1)]
+  
+# test with other 1/2 of known
+x.test <- x[which(s.vec==2),]
+y.test <- y[which(s.vec==2)]
+```
+
+```{r}
+# initial parameters
+k=10
+alpha=seq(from=0,to=1,by=0.1)
+lambda=seq(from=0.1,to=1,by=0.05) # had to set a very small lambda range, otherwise all predictors are removed
+
+# tuning alpha and lambda
+sumMSE=matrix(NA,length(alpha),length(lambda))
+
+for(i in 1:length(alpha)){
+  oo=cv.glmnet(nfolds=k,x=data.matrix(x.train), y=data.matrix(y.train), nlambda=length(lambda),
+  	alpha=alpha[i],lambda=lambda, standardize = T)
+  if(length(oo$cvm)==length(sumMSE[i,])){
+  	sumMSE[i,]=oo$cvm
+  }
+}
+
+# identifiying alpha and lamda that minimizes MSE
+for(i in 1:length(alpha)){
+  if(length(which(sumMSE[i,]==min(sumMSE)))>0){break}
+}
+
+alpha[i]
+lambda[which(sumMSE[i,]==min(sumMSE))]
+```
+
+Testing a package that automatically tunes alpha and lambda
+```{r}
+# setting the training control
+train_control <- trainControl(method = "repeatedcv",
+                              number = 10,
+                              search = "random",
+                              verboseIter = TRUE)
+
+enet <- train(y.train ~ ., data = cbind(y.train, x.train),
+                          method = "glmnet",
+                           preProcess = c("center", "scale"),
+                           trControl = train_control)
+```
+
+```{r}
+# predictions on the training and test sets
+y_train_hat = predict(enet, x.train)
+y_test_hat <- predict(enet, x.test)
+
+# calculating r-squared values
+rsq_train_enet = cor(y.train, y_train_hat)^2
+rsq_train_enet
+rsq_test_enet <- cor(y.test, y_test_hat)^2
+rsq_test_enet
+```
+
+
+```{r}
+# run final optimized model
+oo=glmnet(x=x.train, y=y.train, family=c("gaussian"), 
+  	alpha=alpha[i],lambda=lambda[which(sumMSE[i,]==min(sumMSE))])
+```
+
+Problem: consistently selecting no predictors, is lambda the issue
+
+```{r}
+# which are the selected covariates
+round(oo$beta[,1][which(oo$beta[,1]!=0)],digits=5)
+length(which(oo$beta[,1]!=0))
+```
+
+Below not running bc no predictors
+
+```{r}
+# predictions on the training and test sets
+y_train_hat2 = predict(oo, x.train)
+y_test_hat2 <- predict(oo, x.test)
+
+# calculating r-squared values
+rsq_train_enet2 = cor(y.train, y_train_hat2)^2
+rsq_train_enet2
+rsq_test_enet2 <- cor(y.test, y_test_hat2)^2
+rsq_test_enet2
+```
+
+```{r}
+# train
+prd.train=predict(oo,x.train)
+tau=(min(prd.train[y.train==-1])+max(prd.train[y.train==1]))/2
+table(y.train,as.numeric(prd.train>tau))
+
+# test
+prd.test=predict(oo,x.test)
+table(y.test,as.numeric(prd.test>tau))
+
+# test
+test_1b <- lasso_reg$a0+x.test%*%lasso_reg$beta[,1]
+tau=(min(test_1b[y.test==-1])+max(test_1b[y.test==1]))/2
+
+y.pred <- as.numeric(prd.test>tau)
+y.pred[y.pred == 0] <- -1
+
+# calculate accuracy
+sub.vector <- y.pred - y.test # 0's indicate correct classification
+accuracy <- sum(sub.vector == 0) / length(sub.vector)
+```
+
+
+Below: Chelsea testing
+```{r}
+#creating a term document matrix
+tdm <- as.TermDocumentMatrix(t(dtm.mat), weighting = weightTf)
+
+m <- as.matrix(tdm)
+# reorganizing the matrix to get the most common words
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 20)
+
+# note: consider removing some of these most common words
+
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(2, "Paired"))
+
+barplot(d[1:10,]$freq, las = 2, names.arg = d[1:10,]$word,
+        col ="lightblue", main ="Most frequent words",
+        ylab = "Word frequencies")
+```
+
+
