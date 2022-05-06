@@ -292,12 +292,27 @@ as.data.frame(lda_results)
 Next, we look to structural topic models (STM) to 
 
 ```{r}
+stm_results_term = stm(documents=outs_stm$documents,
+                  vocab=outs_stm$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area,
+                    +term,
+                  data=outs_stm$meta)
+
+#Top Words 
+plot(stm_results)
+```
+
+```{r}
 stm_results = stm(documents=outs_stm$documents,
                   vocab=outs_stm$vocab,
                   K=k,
                   prevalence=
-                    ~issue_area+term,
+                    ~issue_area,
+                  #+term,
                   data=outs_stm$meta)
+plot(stm_results)
 ```
 
 Top Words
@@ -305,7 +320,6 @@ Top Words
 # view 3 top words associated with each topic
 plot(stm_results)
 ```
-
 For this assignment, we are interested in collecting the top 10 words in each category.
 
 ```{r}
