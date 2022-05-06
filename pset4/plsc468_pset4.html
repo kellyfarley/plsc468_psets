@@ -250,7 +250,8 @@ div.tocify {
 <p>Setting the seed for future randomization:</p>
 <pre class="r"><code>set.seed(1005)</code></pre>
 <p>Loading platforms from .rda file:</p>
-<pre class="r"><code>load(file = &quot;pset4/platforms.Rdata&quot;)</code></pre>
+<pre class="r"><code>load(file = &quot;pset4/platforms.Rdata&quot;)
+# load(file = &quot;platforms.Rdata&quot;)</code></pre>
 <p>Goal: to use the lasso, ridge, and elastic net to classify the correct party (D or R) for 478 U.S. state party platforms</p>
 <div id="a-ridge-regression-model" class="section level1">
 <h1>1a: Ridge Regression Model</h1>
@@ -304,7 +305,7 @@ accuracy &lt;- sum(sub.vector == 0) / length(sub.vector)</code></pre>
 </div>
 <div id="c-elastic-net" class="section level1">
 <h1>1c: Elastic Net</h1>
-<p><strong>Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lamba from 0.5-10.5 by increments of 0.5.</strong></p>
+<p><strong>Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lambda from 0.5-10.5 by increments of 0.5.</strong></p>
 <pre class="r"><code># initial tuning range
 k=10
 alpha=seq(from=0,to=1,by=0.1)
@@ -313,7 +314,7 @@ lambda=seq(from=0.5,to=10.5,by=0.5)
 sumMSE=matrix(NA,length(alpha),length(lambda))
 
 for(i in 1:length(alpha)){
-  oo=cv.glmnet(nfolds=3,x=x.train, y=y.train, family=c(&quot;gaussian&quot;),nlambda=length(lambda),
+  oo=cv.glmnet(nfolds=k,x=x.train, y=y.train, family=c(&quot;gaussian&quot;),nlambda=length(lambda),
     alpha=alpha[i],lambda=lambda)
   if(length(oo$cvm)==length(sumMSE[i,])){
     sumMSE[i,]=oo$cvm
@@ -334,14 +335,25 @@ oo=glmnet(x=x.train, y=y.train, family=c(&quot;gaussian&quot;),
 
 # train
 prd.train=predict(oo,x.train)
-tau=(min(prd.train[y.train==1])+max(prd.train[y.train==0]))/2
+tau=(min(prd.train[y.train==-1])+max(prd.train[y.train==1]))/2
 table(y.train,as.numeric(prd.train&gt;tau))
 
 # test
 prd.test=predict(oo,x.test)
-table(y.test,as.numeric(prd.test&gt;tau))</code></pre>
-<p><strong>Identify the alpha, lambda combination that maximizes prediction accuracy in training set.</strong></p>
-<p><strong>Use chosen parameters to classify platforms in a testing set. How many platforms did your elastic net correctly classify? What is the out-of-sample accuracy rate?</strong></p>
+table(y.test,as.numeric(prd.test&gt;tau))
+
+# test
+test_1b &lt;- lasso_reg$a0+x.test%*%lasso_reg$beta[,1]
+tau=(min(test_1b[y.test==-1])+max(test_1b[y.test==1]))/2
+
+y.pred &lt;- as.numeric(prd.test&gt;tau)
+y.pred[y.pred == 0] &lt;- -1
+
+# calculate accuracy
+sub.vector &lt;- y.pred - y.test # 0&#39;s indicate correct classification
+accuracy &lt;- sum(sub.vector == 0) / length(sub.vector)</code></pre>
+<p>Alpha is maximized at zero, meaning that ridge shrinkage is the most effective for our data. Lambda is maximized at 6.</p>
+<p>In the test set, no documents are classified incorrectly. In the training set, 5 documents are classified incorrectly and 236 documents are classified correctly, leading to an out-of-sample accuracy rate of 97.9%. Elastic net performs the best out of the three models.</p>
 </div>
 
 

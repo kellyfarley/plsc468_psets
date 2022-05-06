@@ -17,8 +17,8 @@ rm(list = ls()) # clear global environ
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
 
 # set working directory (change for each user)
-wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
-# wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+#wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
+wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 ```
 
@@ -115,7 +115,7 @@ accuracy <- sum(sub.vector == 0) / length(sub.vector)
 
 The out-of-sample accuracy is 54%.
 
-# 1c: Elastic Net (TO DO)
+# 1c: Elastic Net 
 
 **Combine the ridge and lasso models together using the elastic net with k-fold cross-validation using both glmnet() and cv.glmnet() functions. Set k=10 to do 10-fold cross-validation, search over alpha from 0-1 by increments of 0.1, search over lambda from 0.5-10.5 by increments of 0.5.**
 
