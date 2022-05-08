@@ -658,6 +658,93 @@ as.data.frame(stm_results_majority)
 ```
 
 
+Next, we are interested in seeing whether these trends vary over time. In particular, it is popularly claimed that in the last twenty years, the court has become increasingly politicized. We now divide the dataset into two periods, cases heard from 1955-2009 and those heard after 2009. We chose this cutoff date as this is when the number of Senate confirmation votes for the average SCOTUS appointee dropped significantly. In this section, we compare topics generated during each time period to see whether topics vary differently with time. We note that the sample size for this analysis is smaller than before. The pre-2009 dataset has 2330 observations whereas the post-2009 has only 765. 
+
+To begin, we divide the dataset into the groups defined above. We then conduct the same data preprocessing techniques as above, using a 50% word frequency threshold. 
+```{r}
+dat_pre <- dat %>%
+  filter(term <=2009)
+
+temp = textProcessor(documents=dat_pre$facts,metadata=dat_pre[,1:10])
+outs_stm_pre= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
+
+dat_post <- dat %>% 
+  filter(term > 2009)
+
+temp = textProcessor(documents=dat_post$facts,metadata=dat_post[,1:10])
+outs_stm_post= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
+```
+
+#MQ Scores:
+
+```{r}
+pre_results_mq <- stm(documents=outs_stm_pre$documents,
+                  vocab=outs_stm_pre$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq,
+                  data=outs_stm_pre$meta)
+
+plot(pre_results_mq)
+
+pre_results_mq <- t(labelTopics(model=pre_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(pre_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(pre_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(pre_results_mq)
+
+post_results_mq <- stm(documents=outs_stm_post$documents,
+                  vocab=outs_stm_post$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq,
+                  data=outs_stm_post$meta)
+
+plot(post_results_mq)
+
+post_results_mq <- t(labelTopics(model=post_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(post_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(post_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(post_results_mq)
+```
+
+Next, we turn to variation in majority votes over time by topic. 
+```{r}
+pre_results_maj <- stm(documents=outs_stm_pre$documents,
+                  vocab=outs_stm_pre$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq+majority_vote,
+                  data=outs_stm_pre$meta)
+
+plot(pre_results_maj)
+
+pre_results_maj <- t(labelTopics(model=pre_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(pre_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(pre_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(pre_results_maj)
+
+post_results_maj <- stm(documents=outs_stm_post$documents,
+                  vocab=outs_stm_post$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq+majority_vote,
+                  data=outs_stm_post$meta)
+
+plot(post_results_maj)
+
+post_results_maj <- t(labelTopics(model=post_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(post_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(post_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(post_results_maj)
+```
 
 
 # Lasso, Ridge, and Elastic Net Regression (Chelsea)
