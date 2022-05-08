@@ -528,7 +528,7 @@ Our first task is determining the number of topics emerge in our data set. To do
 ```{r}
 #stm prep
 temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
-outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
+outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 773)
 ```
 
 Before running the model, we also need to determine the number of topics for the models to predict. In determining the value of k, we aim to minimize the Arun and CaoJuan metrics and maximize the Deveaud and Grifiths metrics. 
@@ -570,7 +570,7 @@ To do so, we first begin with a wide set of possible K values (2-100) to underst
 After confirming that there are no anomalous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergence in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
 
 ```{r}
-k <- 12
+k <- 6
 ```
 
 #STM 
@@ -588,8 +588,7 @@ plot(stm_results)
 
 stm_results <- t(labelTopics(model=stm_results, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(stm_results) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(stm_results) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(stm_results) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(stm_results)
 ```
@@ -611,8 +610,7 @@ plot(stm_results_mq)
 
 stm_results_mq <- t(labelTopics(model=stm_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(stm_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(stm_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(stm_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(stm_results_mq)
 ```
@@ -632,8 +630,7 @@ plot(stm_results_disposition)
 
 stm_results_disposition <- t(labelTopics(model=stm_results_disposition, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(stm_results_disposition) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(stm_results_disposition) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(stm_results_disposition) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(stm_results_disposition)
 ```
@@ -651,14 +648,54 @@ plot(stm_results_majority)
 
 stm_results_majority <- t(labelTopics(model=stm_results_majority, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(stm_results_majority) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(stm_results_majority) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(stm_results_majority) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(stm_results_majority)
 ```
 
+Next, we are interested in testing more stringent cutoffs on our majority votes model. To do so we rerun the above analysis with a .5 and .75 cut off. 
 
-Next, we are interested in seeing whether these trends vary over time. In particular, it is popularly claimed that in the last twenty years, the court has become increasingly politicized. We now divide the dataset into two periods, cases heard from 1955-2009 and those heard after 2009. We chose this cutoff date as this is when the number of Senate confirmation votes for the average SCOTUS appointee dropped significantly. In this section, we compare topics generated during each time period to see whether topics vary differently with time. We note that the sample size for this analysis is smaller than before. The pre-2009 dataset has 2330 observations whereas the post-2009 has only 765. 
+```{r}
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
+outs_stm_50= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 1550)
+
+stm_majority_50 = stm(documents=outs_stm_50$documents,
+                  vocab=outs_stm_50$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq + majority_vote ,
+                  data=outs_stm_50$meta)
+
+plot(stm_majority_50)
+
+stm_majority_50 <- t(labelTopics(model=stm_majority_50, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_majority_50) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_majority_50) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_majority_50)
+
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
+outs_stm_75= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 2325)
+
+stm_majority_75 = stm(documents=outs_stm_75$documents,
+                  vocab=outs_stm_75$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq + majority_vote ,
+                  data=outs_stm_75$meta)
+
+plot(stm_majority_75)
+
+stm_majority_75 <- t(labelTopics(model=stm_majority_75, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_majority_75) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_majority_75) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_majority_75)
+
+```
+
+
+Lastly, we are interested in seeing whether these trends vary over time. In particular, it is popularly claimed that in the last twenty years, the court has become increasingly politicized. We now divide the dataset into two periods, cases heard from 1955-2009 and those heard after 2009. We chose this cutoff date as this is when the number of Senate confirmation votes for the average SCOTUS appointee dropped significantly. In this section, we compare topics generated during each time period to see whether topics vary differently with time. We note that the sample size for this analysis is smaller than before. The pre-2009 dataset has 2330 observations whereas the post-2009 has only 765. 
 
 To begin, we divide the dataset into the groups defined above. We then conduct the same data preprocessing techniques as above, using a 50% word frequency threshold. 
 ```{r}
@@ -689,8 +726,7 @@ plot(pre_results_mq)
 
 pre_results_mq <- t(labelTopics(model=pre_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(pre_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(pre_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(pre_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(pre_results_mq)
 
@@ -705,8 +741,7 @@ plot(post_results_mq)
 
 post_results_mq <- t(labelTopics(model=post_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(post_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(post_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(post_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(post_results_mq)
 ```
