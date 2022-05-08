@@ -519,16 +519,12 @@ Because we are interesting in the variation in how different words, issues, are 
 
 Our first task is determining the number of topics emerge in our dataset. To do so, we first prepare the Supreme Court Corpus for analysis. Since the LDA and STM functions rely on different text cleaning parameters, we prepare each according to its compatable cleaning method.
 
-#LDA Prep 
-```{r}
-txts=dat$facts
-docs=lexicalize(txts)
-```
 
 #STM Prep
 ```{r}
+#stm prep
 temp = textProcessor(documents=dat$facts,metadata=dat[,1:9])
-outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta)
+outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
 ```
 
 Our next goal is determining the ideal number of topics for our models. In determining the value of k, we aim to minimize the Arun and CaoJuan metrics and maximize the Deveaud and Grifiths metrics. 
@@ -567,86 +563,11 @@ FindTopicsNumber_plot(metrics_final)
 ```
 To do so, we first begin with a wide set of possible K values (2-100) to understand the broad pattern.It appears that the Arun, CaoJuan, and Deveaud metrics decrease over time while the Griffiths metric increases over time. 
 
-After confirming that there are no anomolous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergens in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
+After confirming that there are no anomalous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergence in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
 
 ```{r}
 k <- 12
 ```
-
-
-*LDA* 
-First, we turn to LDA 
-
-```{r}
-#processing text for lda analysis 
-vocab = docs[[2]]
-result=list()
-
-#preset parameters for lda() models
-alpha = 1.0
-eta = 0.1
-params = sample(c(-1, 1), k, replace=TRUE)
-
-#running the model!
-test=lda.collapsed.gibbs.sampler(docs[[1]], 		
-	k,  			
-	vocab,		
-	100,  
-	alpha = alpha, 
-	eta = eta,   
-	compute.log.likelihood=TRUE
-)
-```
-Top Words
-```{r}
-lda_results <- top.topic.words(test$topics,10)
-as.data.frame(lda_results)
-```
-
-```{r}
-issue_results=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, 
-		eta=eta,
-		annotations=dat$issue_area,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-```
-Top Words
-```{r}
-top_issue <- top.topic.words(issue_results$topics,10)
-as.data.frame(lda_results)
-```
-
-```{r}
-issue_results=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, 
-		eta=eta,
-		annotations=dat$issue_area,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-```
-Top Words
-```{r}
-top_issue <- top.topic.words(issue_results$topics,10)
-as.data.frame(lda_results)
-```
-
 
 #STM 
 Next, we look to structural topic models (STM) to 
@@ -691,7 +612,7 @@ as.data.frame(stm_results)
 
 MQ scores 
 ```{r}
-stm_results_mq = stm(documents=outs_stm$documents,
+stm_results_mq <- stm(documents=outs_stm$documents,
                   vocab=outs_stm$vocab,
                   K=k,
                   prevalence=
