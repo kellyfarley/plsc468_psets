@@ -14,7 +14,7 @@ output:
 ```{r}
 # set working directory (change for each user)
 wd <- "/Users/kellyfarley/Desktop/machine_learning/plsc468_psets"
-#wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
+wd <- "/Users/numikatz/Documents/Senior_Year/Spring_22/PLSC_468/PLSC_468/plsc468_psets"
 knitr::opts_knit$set(root.dir = wd)
 ```
 
@@ -681,7 +681,7 @@ stm_majority_75 = stm(documents=outs_stm_75$documents,
                   vocab=outs_stm_75$vocab,
                   K=k,
                   prevalence=
-                    ~issue_area+term+median_mq + majority_vote ,
+                    ~issue_area+term+median_mq +majority_vote,
                   data=outs_stm_75$meta)
 
 plot(stm_majority_75)
