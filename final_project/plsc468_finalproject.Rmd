@@ -759,8 +759,7 @@ plot(pre_results_maj)
 
 pre_results_maj <- t(labelTopics(model=pre_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(pre_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(pre_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(pre_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(pre_results_maj)
 
@@ -775,8 +774,7 @@ plot(post_results_maj)
 
 post_results_maj <- t(labelTopics(model=post_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(post_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(post_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(post_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(post_results_maj)
 ```
