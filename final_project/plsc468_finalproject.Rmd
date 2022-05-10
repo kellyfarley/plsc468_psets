@@ -782,29 +782,23 @@ as.data.frame(post_results_maj)
 ```
 
 
-# Lasso, Ridge, and Elastic Net Regression (Chelsea)
-
-From Pset4
-
-Notes from Chelsea: I'm going to proceed w elastic net - it is computationally most expensive but I think it is useful in that it combines features of Lasso and Ridge - can optimize both alpha and lambda., change size of traning/test
-
-Things to try: just lasso or ridge, classifying rather than predicting the level of agreement
+# Elastic Net Regression
 
 
-Model 1: predicting the level of agreement (continuous)
+## Model 1: Predicting the number of justices on the majority opinion
+
+First, we subset our data to variables of interest and we clean the corpus of case fact data.
 
 ```{r}
-# subsetting to complete data and selecting variables
-# note: minority vote was also removed bc that perfectly predicts majority vote
-
-x <- na.omit(subset(dat, select = -c(name, href, minority_vote)))
-names(x)[1] <- "jterm"
-y <- x$majority_vote
+# subsetting to complete data and selecting relevant variables
+x_raw <- na.omit(subset(dat, select = -c(name, href, minority_vote)))
+names(x_raw)[1] <- "jterm"
+y <- x_raw$majority_vote
 ```
 
 ```{r}
 # creating a corpus
-corpus <- Corpus(VectorSource(x$facts))
+corpus <- Corpus(VectorSource(x_raw$facts))
 
 # stem using porter algorithm
 corpus <- tm_map(corpus, stemDocument)
@@ -828,24 +822,28 @@ corpus <- tm_map(corpus, removeNumbers)
 corpus <- tm_map(corpus, removeWords, stopwords("en"))
 ```
 
+Next, we remove words that appear in over 40% of documents.
+
 ```{r}
 # removing frequent words
-
 ndocs <- length(corpus)
 minDocFreq <- ndocs * 0.01
-maxDocFreq <- ndocs * 0.5 # 50% as upper - model was kind of struggling w higher bounds
+maxDocFreq <- ndocs * 0.4 # 50% as upper - model was kind of struggling w higher bounds
 
 # creating a dtm 
 dtm <- DocumentTermMatrix(corpus, control = list(bounds = list(global = c(minDocFreq, maxDocFreq))))
 dtm.mat <- as.matrix(dtm)
 
 # combining dtm with other data
-x <- subset(x, select = -c(majority_vote, facts))
+x <- subset(x_raw, select = -c(majority_vote, facts))
 x <- cbind(x, dtm.mat)
 ```
 
+Next, we split our data 50/50 into test and trainig sets, and we tune an optimal alpha and lambda based on our training data. For this section, the range of lambda values is quite small, as lambda ranges any larger resulted in selection of a large lambda and elimination of all predictors. 
 
 ```{r}
+set.seed(1005)
+
 # split into test/training
 N=nrow(x)
 s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
@@ -860,10 +858,12 @@ y.test <- y[which(s.vec==2)]
 ```
 
 ```{r}
+set.seed(1005)
+
 # initial parameters
 k=10
 alpha=seq(from=0,to=1,by=0.1)
-lambda=seq(from=0.1,to=1,by=0.05) # had to set a very small lambda range, otherwise all predictors are removed
+lambda=seq(from=0.1,to=0.3,by=0.05) 
 
 # tuning alpha and lambda
 sumMSE=matrix(NA,length(alpha),length(lambda))
@@ -885,104 +885,248 @@ alpha[i]
 lambda[which(sumMSE[i,]==min(sumMSE))]
 ```
 
-Testing a package that automatically tunes alpha and lambda
-```{r}
-# setting the training control
-train_control <- trainControl(method = "repeatedcv",
-                              number = 10,
-                              search = "random",
-                              verboseIter = TRUE)
-
-enet <- train(y.train ~ ., data = cbind(y.train, x.train),
-                          method = "glmnet",
-                           preProcess = c("center", "scale"),
-                           trControl = train_control)
-```
-
-```{r}
-# predictions on the training and test sets
-y_train_hat = predict(enet, x.train)
-y_test_hat <- predict(enet, x.test)
-
-# calculating r-squared values
-rsq_train_enet = cor(y.train, y_train_hat)^2
-rsq_train_enet
-rsq_test_enet <- cor(y.test, y_test_hat)^2
-rsq_test_enet
-```
-
+We next create a final model based on our optimized alpha and lambda values.
 
 ```{r}
 # run final optimized model
 oo=glmnet(x=x.train, y=y.train, family=c("gaussian"), 
   	alpha=alpha[i],lambda=lambda[which(sumMSE[i,]==min(sumMSE))])
-```
 
-Problem: consistently selecting no predictors, is lambda the issue
-
-```{r}
 # which are the selected covariates
 round(oo$beta[,1][which(oo$beta[,1]!=0)],digits=5)
 length(which(oo$beta[,1]!=0))
 ```
 
-Below not running bc no predictors
+Using our final model, we evaluate its performance on our test data and calculate the number of cases where the number of justices on the majority opinion was predicted correctly. 
 
 ```{r}
 # predictions on the training and test sets
-y_train_hat2 = predict(oo, x.train)
-y_test_hat2 <- predict(oo, x.test)
+y_train_hat2 = predict(oo, data.matrix(x.train))
+y_test_hat2 <- predict(oo, data.matrix(x.test))
 
-# calculating r-squared values
-rsq_train_enet2 = cor(y.train, y_train_hat2)^2
-rsq_train_enet2
-rsq_test_enet2 <- cor(y.test, y_test_hat2)^2
-rsq_test_enet2
+# calculating accuracy on test data
+ydiff <- round(y_test_hat2) - y.test
+accuracy <- sum(ydiff == 0)/length(ydiff)
+
+# classification table on test data
+table(round(y_test_hat2), y.test)
+```
+
+
+## Model 2: Predicting if a case was contested or uncontested
+
+We use the same predictors as model 1, but we create a binary variable instead, using the number of justices on the majority opinion to classify cases as either contested or non-contested. We argue that 7 or more justices represent an uncontested case, while 5 or 6 justices represent a contested case. Here, we are being conservative with what we consider to be a contested case.
+
+```{r}
+# creating a binary variable, 1 = agree, -1 = contested
+agree <- ifelse(y >= 7, 1, -1)
+
+# splitting test and training 
+agree.train <- agree[which(s.vec==1)]
+agree.test <- agree[which(s.vec==2)]
+```
+
+# We tune an optimal lambda and alpha, run a final model, and create classification tables and calculate accuracy, following a similar procedure as Model 1.
+
+```{r}
+set.seed(1005)
+
+# initial parameters
+k=10
+alpha=seq(from=0,to=1,by=0.1)
+lambda=seq(from=0.01,to=0.4,by=0.05) 
+
+# tuning alpha and lambda
+sumMSE=matrix(NA,length(alpha),length(lambda))
+
+for(i in 1:length(alpha)){
+  oo=cv.glmnet(nfolds=k,x=data.matrix(x.train), y=data.matrix(agree.train), nlambda=length(lambda),
+  	alpha=alpha[i],lambda=lambda, standardize = T)
+  if(length(oo$cvm)==length(sumMSE[i,])){
+  	sumMSE[i,]=oo$cvm
+  }
+}
+
+# identifiying alpha and lamda that minimizes MSE
+for(i in 1:length(alpha)){
+  if(length(which(sumMSE[i,]==min(sumMSE)))>0){break}
+}
+
+alpha[i]
+lambda[which(sumMSE[i,]==min(sumMSE))]
 ```
 
 ```{r}
-# train
-prd.train=predict(oo,x.train)
-tau=(min(prd.train[y.train==-1])+max(prd.train[y.train==1]))/2
-table(y.train,as.numeric(prd.train>tau))
+# run final optimized model
+oo=glmnet(x=x.train, y=agree.train, family=c("gaussian"),
+  	alpha=alpha[i],lambda=lambda[which(sumMSE[i,]==min(sumMSE))])
 
-# test
-prd.test=predict(oo,x.test)
-table(y.test,as.numeric(prd.test>tau))
+# which are the selected covariates
+round(oo$beta[,1][which(oo$beta[,1]!=0)],digits=5)
+length(which(oo$beta[,1]!=0))
+```
 
-# test
-test_1b <- lasso_reg$a0+x.test%*%lasso_reg$beta[,1]
-tau=(min(test_1b[y.test==-1])+max(test_1b[y.test==1]))/2
+```{r}
+# classification table on training data
+prd.train=predict(oo,data.matrix(x.train))
+tau=(min(prd.train[agree.train==-1])+max(prd.train[agree.train==1]))/2
+y.test <- as.numeric(prd.train>tau)
+y.test[y.test == 0] <- -1
+table(agree.train,y.test)
 
+# classification table on test data
+prd.test=predict(oo, data.matrix(x.test))
 y.pred <- as.numeric(prd.test>tau)
 y.pred[y.pred == 0] <- -1
+table(agree.test,y.pred)
 
-# calculate accuracy
-sub.vector <- y.pred - y.test # 0's indicate correct classification
+# calculate accuracy on test data
+sub.vector <- y.pred - agree.test # 0's indicate correct classification
 accuracy <- sum(sub.vector == 0) / length(sub.vector)
+
+accuracy
 ```
 
+## Model 3: Predicting if a case was affirmed or reversed
 
-Below: Chelsea testing
+Next, we create a separate model to predict if a case was affirmed or reversed. First, we subset to cases that either had an affirmed or reversed disposition. Because we create a new set of data, we recreate and reclean the corpus.
+
 ```{r}
-#creating a term document matrix
-tdm <- as.TermDocumentMatrix(t(dtm.mat), weighting = weightTf)
+# subsetting to cases that were affirmed or reversed
+x_AR <- dat %>%
+  filter(disposition == "affirmed" | disposition == "reversed") 
 
-m <- as.matrix(tdm)
-# reorganizing the matrix to get the most common words
-v <- sort(rowSums(m),decreasing=TRUE)
-d <- data.frame(word = names(v),freq=v)
-head(d, 20)
-
-# note: consider removing some of these most common words
-
-wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=200, random.order=FALSE, rot.per=0.35, 
-          colors=brewer.pal(2, "Paired"))
-
-barplot(d[1:10,]$freq, las = 2, names.arg = d[1:10,]$word,
-        col ="lightblue", main ="Most frequent words",
-        ylab = "Word frequencies")
+# subsetting to data of interest
+x_raw_AR <- na.omit(subset(x_AR, select = -c(name, href, minority_vote, disposition)))
+names(x_raw_AR)[1] <- "jterm"
+AR_raw <- x_AR$disposition
 ```
 
+```{r}
+# creating a corpus
+corpus <- Corpus(VectorSource(x_raw_AR$facts))
+
+# stem using porter algorithm
+corpus <- tm_map(corpus, stemDocument)
+
+# remove uppercase
+corpus <- tm_map(corpus, tolower)
+
+# remove stop words
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# remove punctuation
+corpus <- tm_map(corpus, removePunctuation)
+
+# remove extra white space
+corpus <- tm_map(corpus, stripWhitespace)
+
+# remove numbers
+corpus <- tm_map(corpus, removeNumbers)
+
+# remove stopwords
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+```
+
+We again remove words that appear in over 40% of documents in the corpus.
+
+```{r}
+# removing frequent words
+ndocs <- length(corpus)
+minDocFreq <- ndocs * 0.01
+maxDocFreq <- ndocs * 0.4 # 50% as upper - model was kind of struggling w higher bounds
+
+# creating a dtm 
+dtm <- DocumentTermMatrix(corpus, control = list(bounds = list(global = c(minDocFreq, maxDocFreq))))
+dtm.mat <- as.matrix(dtm)
+
+# combining dtm with other data
+x <- subset(x_raw_AR, select = -c(majority_vote, facts))
+x <- cbind(x, dtm.mat)
+```
+
+We split our data 50/50 into training/test data and create a binary variable to represent affirmed/reversed.
+
+```{r}
+set.seed(1005)
+# split into test/training
+N=nrow(x)
+s.vec=sample(1:2,replace=T,prob=c(1/2, 1/2),size=N)
+  
+# train with 1/2 of known
+x.train <- x[which(s.vec==1),]
+  
+# test with other 1/2 of known
+x.test <- x[which(s.vec==2),]
+```
+
+```{r}
+# creating a binary variable, 1 = affirmed, -1 = remanded
+AR <- ifelse(AR_raw == "affirmed", 1, -1)
+
+# splitting test and training 
+AR.train <- AR[which(s.vec==1)]
+AR.test <- AR[which(s.vec==2)]
+```
+
+Next, following a similar procedure as Models 1 and 2, we tune alpha and lambda, run an optimized model on our training data, and determine the accuracy of the model in classifying our test data.
+
+```{r}
+set.seed(1005)
+
+# initial parameters
+k=10
+alpha=seq(from=0,to=1,by=0.1)
+lambda=seq(from=0.1,to=1.5,by=0.1) # had to set a very small lambda range, otherwise all predictors are removed
+
+# tuning alpha and lambda
+sumMSE=matrix(NA,length(alpha),length(lambda))
+
+for(i in 1:length(alpha)){
+  oo=cv.glmnet(nfolds=k,x=data.matrix(x.train), y=data.matrix(AR.train), nlambda=length(lambda),
+  	alpha=alpha[i],lambda=lambda, standardize = T)
+  if(length(oo$cvm)==length(sumMSE[i,])){
+  	sumMSE[i,]=oo$cvm
+  }
+}
+
+# identifiying alpha and lamda that minimizes MSE
+for(i in 1:length(alpha)){
+  if(length(which(sumMSE[i,]==min(sumMSE)))>0){break}
+}
+
+alpha[i]
+lambda[which(sumMSE[i,]==min(sumMSE))]
+```
+
+```{r}
+# run final optimized model
+oo=glmnet(x=x.train, y=AR.train, family=c("gaussian"),
+  	alpha=alpha[i],lambda=lambda[which(sumMSE[i,]==min(sumMSE))])
+
+# which are the selected covariates
+round(oo$beta[,1][which(oo$beta[,1]!=0)],digits=5)
+length(which(oo$beta[,1]!=0))
+```
+
+```{r}
+# creating classification tables on training data
+prd.train=predict(oo,data.matrix(x.train))
+tau=(min(prd.train[AR.train==-1])+max(prd.train[AR.train==1]))/2
+y.test <- as.numeric(prd.train>tau)
+y.test[y.test == 0] <- -1
+table(AR.train,y.test)
+
+# creating classification tables on test data
+prd.test=predict(oo, data.matrix(x.test))
+y.pred <- as.numeric(prd.test>tau)
+y.pred[y.pred == 0] <- -1
+table(AR.test,y.pred)
+
+# calculate accuracy on test data
+sub.vector <- y.pred - AR.test # 0's indicate correct classification
+accuracy <- sum(sub.vector == 0) / length(sub.vector)
+
+accuracy
+```
 
