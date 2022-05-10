@@ -36,6 +36,8 @@ library(wordcloud)
 library(RColorBrewer)
 library(glmnet)
 library(caret)
+library(ldatuning)
+library(stm)
 #library(reticulate)
 #library(rjson)
 #library(jsonlite)
@@ -69,7 +71,7 @@ justices <- read.csv("justices.csv")
 dim(dat)
 ```
 
-We note 16 variables recorded for 3,303 SCOTUS cases. Only some of these variables are relevant for our analysis:
+We note 16 variables recorded for 3,303 SCOTUS cases. We remove any rows that have missing data, leaving us with 3101 observations. Only some of these variables are relevant for our analysis:
 
 ```{r}
 dat <- dat %>%
@@ -515,23 +517,21 @@ barplot(d_ea[1:10,]$freq, las = 2, names.arg = d_ea[1:10,]$word,
 
 # Topic Modeling (Numi)
 
+
+
 Because we are interesting in the variation in how different words, issues, are linked to the level of Supreme Court disagreement, we now turn to structural topic models.
 
-Our first task is determining the number of topics emerge in our dataset. To do so, we first prepare the Supreme Court Corpus for analysis. Since the LDA and STM functions rely on different text cleaning parameters, we prepare each according to its compatable cleaning method.
+Our first task is determining the number of topics emerge in our data set. To do so, we first prepare the Supreme Court corpus for analysis. Originally, we used the full data set for STM models; however, because there is a are words with high frequency that do not meaningfully improve our understanding of a case (for example, neutral procedural terms) we implement a word frequency threshold. Here, our baseline models eliminate words that appear in more than 50% of documents. 
 
-#LDA Prep 
-```{r}
-txts=dat$facts
-docs=lexicalize(txts)
-```
 
 #STM Prep
 ```{r}
-temp = textProcessor(documents=dat$facts,metadata=dat[,1:9])
-outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta)
+#stm prep
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
+outs_stm= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 773)
 ```
 
-Our next goal is determining the ideal number of topics for our models. In determining the value of k, we aim to minimize the Arun and CaoJuan metrics and maximize the Deveaud and Grifiths metrics. 
+Before running the model, we also need to determine the number of topics for the models to predict. In determining the value of k, we aim to minimize the Arun and CaoJuan metrics and maximize the Deveaud and Grifiths metrics. 
 
 ```{r}
 # creating a tdm of documents
@@ -567,89 +567,14 @@ FindTopicsNumber_plot(metrics_final)
 ```
 To do so, we first begin with a wide set of possible K values (2-100) to understand the broad pattern.It appears that the Arun, CaoJuan, and Deveaud metrics decrease over time while the Griffiths metric increases over time. 
 
-After confirming that there are no anomolous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergens in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
+After confirming that there are no anomalous patterns as K reaches higher values, we then narrow our value range significantly. After fifteen, there begins to be a divergence in the Deveaud and Griffiths metrics. Looking below 15, the CaoJuan measure is minimized at k=12 and the Arun metric steadily decreases. As such, we set k=12 for the rest of the models. 
 
 ```{r}
-k <- 12
+k <- 6
 ```
-
-
-*LDA* 
-First, we turn to LDA 
-
-```{r}
-#processing text for lda analysis 
-vocab = docs[[2]]
-result=list()
-
-#preset parameters for lda() models
-alpha = 1.0
-eta = 0.1
-params = sample(c(-1, 1), k, replace=TRUE)
-
-#running the model!
-test=lda.collapsed.gibbs.sampler(docs[[1]], 		
-	k,  			
-	vocab,		
-	100,  
-	alpha = alpha, 
-	eta = eta,   
-	compute.log.likelihood=TRUE
-)
-```
-Top Words
-```{r}
-lda_results <- top.topic.words(test$topics,10)
-as.data.frame(lda_results)
-```
-
-```{r}
-issue_results=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, 
-		eta=eta,
-		annotations=dat$issue_area,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-```
-Top Words
-```{r}
-top_issue <- top.topic.words(issue_results$topics,10)
-as.data.frame(lda_results)
-```
-
-```{r}
-issue_results=slda.em(documents=docs[[1]],
-		K=k,
-		vocab=vocab,
-		num.e.iterations=10,
-		num.m.iterations=4,
-		alpha=alpha, 
-		eta=eta,
-		annotations=dat$issue_area,
-		params,
-		variance=0.25,
-		lambda=1.0,
-		logistic=FALSE, 
-		method="sLDA"
-)
-```
-Top Words
-```{r}
-top_issue <- top.topic.words(issue_results$topics,10)
-as.data.frame(lda_results)
-```
-
 
 #STM 
-Next, we look to structural topic models (STM) to 
+Next, we look to structural topic models (STM). We begin with a "baseline" models which uses just issue area and term to predict groupings. For each model we plot the three most frequent words in each topic and additionally generate the whole list of top ten words for each of the topics. 
 
 ```{r}
 stm_results = stm(documents=outs_stm$documents,
@@ -658,24 +583,204 @@ stm_results = stm(documents=outs_stm$documents,
                   prevalence=
                     ~issue_area+term,
                   data=outs_stm$meta)
-```
 
-Top Words
-```{r}
-# view 3 top words associated with each topic
 plot(stm_results)
-```
 
-For this assignment, we are interested in collecting the top 10 words in each category.
-
-```{r}
 stm_results <- t(labelTopics(model=stm_results, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
 
-colnames(stm_results) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
-                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+colnames(stm_results) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
 rownames(stm_results) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
 as.data.frame(stm_results)
 ```
+
+Next, we proceed by adding a series of covariates to our topic models. 
+
+Since we are interested in understanding the effect of party polarization over time, our next model uses the median MQ score as a covariate in predicting topics.
+
+MQ scores 
+```{r}
+stm_results_mq <- stm(documents=outs_stm$documents,
+                  vocab=outs_stm$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq,
+                  data=outs_stm$meta)
+
+plot(stm_results_mq)
+
+stm_results_mq <- t(labelTopics(model=stm_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_results_mq)
+```
+
+Now we investigate how this full set of covariates which control for 
+
+Disposition  
+```{r}
+stm_results_disposition = stm(documents=outs_stm$documents,
+                  vocab=outs_stm$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+ median_mq + disposition ,
+                  data=outs_stm$meta)
+
+plot(stm_results_disposition)
+
+stm_results_disposition <- t(labelTopics(model=stm_results_disposition, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_results_disposition) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_results_disposition) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_results_disposition)
+```
+
+Majority Vote 
+```{r}
+stm_results_majority = stm(documents=outs_stm$documents,
+                  vocab=outs_stm$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq + majority_vote ,
+                  data=outs_stm$meta)
+
+plot(stm_results_majority)
+
+stm_results_majority <- t(labelTopics(model=stm_results_majority, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_results_majority) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_results_majority) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_results_majority)
+```
+
+Next, we are interested in testing more stringent cutoffs on our majority votes model. To do so we rerun the above analysis with a .5 and .75 cut off. 
+
+```{r}
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
+outs_stm_50= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 1550)
+
+stm_majority_50 = stm(documents=outs_stm_50$documents,
+                  vocab=outs_stm_50$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq + majority_vote ,
+                  data=outs_stm_50$meta)
+
+plot(stm_majority_50)
+
+stm_majority_50 <- t(labelTopics(model=stm_majority_50, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_majority_50) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_majority_50) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_majority_50)
+
+temp = textProcessor(documents=dat$facts,metadata=dat[,1:10])
+outs_stm_75= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 2325)
+
+stm_majority_75 = stm(documents=outs_stm_75$documents,
+                  vocab=outs_stm_75$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq + majority_vote ,
+                  data=outs_stm_75$meta)
+
+plot(stm_majority_75)
+
+stm_majority_75 <- t(labelTopics(model=stm_majority_75, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(stm_majority_75) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(stm_majority_75) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(stm_majority_75)
+
+```
+
+
+Lastly, we are interested in seeing whether these trends vary over time. In particular, it is popularly claimed that in the last twenty years, the court has become increasingly politicized. We now divide the dataset into two periods, cases heard from 1955-2009 and those heard after 2009. We chose this cutoff date as this is when the number of Senate confirmation votes for the average SCOTUS appointee dropped significantly. In this section, we compare topics generated during each time period to see whether topics vary differently with time. We note that the sample size for this analysis is smaller than before. The pre-2009 dataset has 2330 observations whereas the post-2009 has only 765. 
+
+To begin, we divide the dataset into the groups defined above. We then conduct the same data preprocessing techniques as above, using a 50% word frequency threshold. 
+```{r}
+dat_pre <- dat %>%
+  filter(term <=2009)
+
+temp = textProcessor(documents=dat_pre$facts,metadata=dat_pre[,1:10])
+outs_stm_pre= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
+
+dat_post <- dat %>% 
+  filter(term > 2009)
+
+temp = textProcessor(documents=dat_post$facts,metadata=dat_post[,1:10])
+outs_stm_post= prepDocuments(temp$documents, temp$vocab, temp$meta, upper.thresh = 500)
+```
+
+#MQ Scores:
+
+```{r}
+pre_results_mq <- stm(documents=outs_stm_pre$documents,
+                  vocab=outs_stm_pre$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq,
+                  data=outs_stm_pre$meta)
+
+plot(pre_results_mq)
+
+pre_results_mq <- t(labelTopics(model=pre_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(pre_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(pre_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(pre_results_mq)
+
+post_results_mq <- stm(documents=outs_stm_post$documents,
+                  vocab=outs_stm_post$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq,
+                  data=outs_stm_post$meta)
+
+plot(post_results_mq)
+
+post_results_mq <- t(labelTopics(model=post_results_mq, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(post_results_mq) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6")
+rownames(post_results_mq) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(post_results_mq)
+```
+
+Next, we turn to variation in majority votes over time by topic. 
+```{r}
+pre_results_maj <- stm(documents=outs_stm_pre$documents,
+                  vocab=outs_stm_pre$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq+majority_vote,
+                  data=outs_stm_pre$meta)
+
+plot(pre_results_maj)
+
+pre_results_maj <- t(labelTopics(model=pre_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(pre_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(pre_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(pre_results_maj)
+
+post_results_maj <- stm(documents=outs_stm_post$documents,
+                  vocab=outs_stm_post$vocab,
+                  K=k,
+                  prevalence=
+                    ~issue_area+term+median_mq+majority_vote,
+                  data=outs_stm_post$meta)
+
+plot(post_results_maj)
+
+post_results_maj <- t(labelTopics(model=post_results_maj, topics = NULL, n = 10, frexweight = 0.5)[1]$prob)
+
+colnames(post_results_maj) <- c("Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7", 
+                          "Topic 8", "Topic 9", "Topic 10", "Topic 11", "Topic 12")
+rownames(post_results_maj) <- c("#1", "#2", "#3", "#4", "#5", "#6" , "#7", "#8", "9", "#10")
+as.data.frame(post_results_maj)
+```
+
 
 # Lasso, Ridge, and Elastic Net Regression (Chelsea)
 
